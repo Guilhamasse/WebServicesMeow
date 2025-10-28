@@ -1,0 +1,128 @@
+### Variables
+@baseUrl = http://localhost:3000
+
+##############################################
+# ADMIN : Créer des utilisateurs/clés API
+##############################################
+
+### Créer un utilisateur avec sa clé API
+POST {{baseUrl}}/admin/users
+Content-Type: application/json
+
+{
+  "email": "client1@example.com",
+  "name": "Application mobile iOS",
+  "expires_in_days": 365
+}
+
+### Créer un autre utilisateur
+POST {{baseUrl}}/admin/users
+Content-Type: application/json
+
+{
+  "email": "client2@example.com",
+  "name": "Application web",
+  "expires_in_days": 180
+}
+
+### Créer un utilisateur sans expiration
+POST {{baseUrl}}/admin/users
+Content-Type: application/json
+
+{
+  "email": "client3@example.com",
+  "name": "Clé permanente"
+}
+
+### Lister tous les utilisateurs
+GET {{baseUrl}}/admin/users
+
+##############################################
+# CLIENT : Utiliser la clé API
+# Remplacez YOUR_API_KEY par la clé reçue
+##############################################
+
+@apiKey = tk_live_VOTRE_CLE_API
+
+### Enregistrer une position
+POST {{baseUrl}}/api/v1/parking
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "latitude": 48.8566,
+  "longitude": 2.3522,
+  "address": "1 Rue de Rivoli, 75001 Paris",
+  "note": "Parking souterrain niveau -2, emplacement 15"
+}
+
+### Récupérer la dernière position
+GET {{baseUrl}}/api/v1/parking/current
+X-API-Key: {{apiKey}}
+
+### Historique complet
+GET {{baseUrl}}/api/v1/parking/history
+X-API-Key: {{apiKey}}
+
+### Pagination
+GET {{baseUrl}}/api/v1/parking/history?limit=5&offset=0
+X-API-Key: {{apiKey}}
+
+### Supprimer une position
+DELETE {{baseUrl}}/api/v1/parking/1
+X-API-Key: {{apiKey}}
+
+### Modifier une position
+PATCH {{baseUrl}}/api/v1/parking/1
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "note": "Note modifiée",
+  "address": "Nouvelle adresse"
+}
+
+##############################################
+# ADMIN : Gestion avancée
+##############################################
+
+### Créer une clé API supplémentaire pour un user existant
+POST {{baseUrl}}/admin/users/1/api-keys
+Content-Type: application/json
+
+{
+  "name": "Clé pour environnement de développement",
+  "expires_in_days": 30
+}
+
+### Désactiver une clé API
+DELETE {{baseUrl}}/admin/api-keys/1
+
+##############################################
+# TESTS D'ERREURS
+##############################################
+
+### Test sans clé API (doit échouer)
+POST {{baseUrl}}/api/v1/parking
+Content-Type: application/json
+
+{
+  "latitude": 48.8566,
+  "longitude": 2.3522
+}
+
+### Test avec clé API invalide (doit échouer)
+GET {{baseUrl}}/api/v1/parking/current
+X-API-Key: tk_live_invalid_key_12345
+
+### Test avec coordonnées invalides
+POST {{baseUrl}}/api/v1/parking
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "latitude": 999,
+  "longitude": -200,
+  "address": "Coordonnées invalides"
+}
+
