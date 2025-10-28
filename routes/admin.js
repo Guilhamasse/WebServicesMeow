@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { generateApiKey } from '../utils/apiKeyGenerator.js';
+import { generateApiKey, hashApiKey, extractPrefix } from '../utils/apiKeyGenerator.js';
 import { body, validationResult } from 'express-validator';
 
 const router = express.Router();
@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 /**
  * Validation pour créer un user
- */
+*/
 const createUserValidation = [
     body('email')
         .isEmail()
@@ -55,6 +55,8 @@ router.post('/users', createUserValidation, async (req, res) => {
 
         // Générer une clé API
         const apiKey = generateApiKey();
+        const keyHash = hashApiKey(apiKey);
+        const keyPrefix = extractPrefix(apiKey);
 
         // Calculer la date d'expiration si spécifiée
         let expires_at = null;
@@ -74,17 +76,18 @@ router.post('/users', createUserValidation, async (req, res) => {
                 }
             });
 
-            // Créer la clé API
+            // Créer la clé API avec hash et préfixe
             const keyRecord = await tx.apiKey.create({
                 data: {
                     user_id: user.id,
-                    key: apiKey,
+                    key_hash: keyHash,
+                    key_prefix: keyPrefix,
                     name: name || `Clé pour ${email}`,
                     expires_at
                 }
             });
 
-            return { user, apiKey: keyRecord };
+            return { user, apiKey: keyRecord, plainKey: apiKey };
         });
 
         res.status(201).json({
@@ -95,12 +98,12 @@ router.post('/users', createUserValidation, async (req, res) => {
                 created_at: result.user.created_at
             },
             apiKey: {
-                key: result.apiKey.key,
+                key: result.plainKey,
                 name: result.apiKey.name,
                 created_at: result.apiKey.created_at,
                 expires_at: result.apiKey.expires_at
             },
-            warning: '⚠️ Conservez ces informations en sécurité'
+            warning: '⚠️ Conservez ces informations en sécurité - Cette clé ne sera affichée qu\'une seule fois'
         });
     } catch (error) {
         console.error('Erreur lors de la création:', error);
@@ -122,7 +125,7 @@ router.get('/users', async (req, res) => {
                 apiKeys: {
                     select: {
                         id: true,
-                        key: true,
+                        key_prefix: true,
                         name: true,
                         is_active: true,
                         created_at: true,
@@ -153,8 +156,13 @@ router.get('/users', async (req, res) => {
                 apiKeysCount: user._count.apiKeys,
                 parkingsCount: user._count.parkings,
                 apiKeys: user.apiKeys.map(k => ({
-                    ...k,
-                    key: k.key.substring(0, 15) + '...' + k.key.substring(k.key.length - 8)
+                    id: k.id,
+                    key_prefix: k.key_prefix + '***',
+                    name: k.name,
+                    is_active: k.is_active,
+                    created_at: k.created_at,
+                    last_used_at: k.last_used_at,
+                    expires_at: k.expires_at
                 }))
             })),
             total: users.length
@@ -191,6 +199,8 @@ router.post('/users/:id/api-keys', async (req, res) => {
 
         // Générer une nouvelle clé API
         const apiKey = generateApiKey();
+        const keyHash = hashApiKey(apiKey);
+        const keyPrefix = extractPrefix(apiKey);
 
         // Calculer la date d'expiration
         let expires_at = null;
@@ -200,11 +210,12 @@ router.post('/users/:id/api-keys', async (req, res) => {
             expires_at = expiryDate;
         }
 
-        // Créer la clé
+        // Créer la clé avec hash et préfixe
         const keyRecord = await prisma.apiKey.create({
             data: {
                 user_id: parseInt(id),
-                key: apiKey,
+                key_hash: keyHash,
+                key_prefix: keyPrefix,
                 name: name || `Clé API - ${new Date().toLocaleDateString()}`,
                 expires_at
             }
@@ -213,13 +224,12 @@ router.post('/users/:id/api-keys', async (req, res) => {
         res.status(201).json({
             message: 'Clé API créée avec succès',
             apiKey: {
-                id: keyRecord.id,
-                key: keyRecord.key,
+                key: apiKey,
                 name: keyRecord.name,
                 created_at: keyRecord.created_at,
                 expires_at: keyRecord.expires_at
             },
-            warning: '⚠️ Conservez cette clé en sécurité'
+            warning: '⚠️ Conservez cette clé en sécurité - Cette clé ne sera affichée qu\'une seule fois'
         });
     } catch (error) {
         console.error('Erreur lors de la création de la clé:', error);

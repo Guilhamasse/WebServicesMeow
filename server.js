@@ -21,19 +21,6 @@ app.use(cors({
 
 app.use(express.json());
 
-// Routes
-app.get('/', (req, res) => {
-    res.json({
-        message: 'TrackMe API v1.0',
-        description: 'API pour gérer vos emplacements de parking',
-        documentation: 'Consultez /api/v1 pour les endpoints disponibles',
-        endpoints: {
-            auth: '/api/v1/auth',
-            parking: '/api/v1/parking'
-        }
-    });
-});
-
 // Routes API publiques (pour les clients externes)
 app.use('/api/v1/parking', parkingRoutes);
 
