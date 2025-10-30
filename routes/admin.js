@@ -25,9 +25,87 @@ const createUserValidation = [
 ];
 
 /**
- * POST /admin/users
- * Créer un utilisateur avec sa clé API
- * Utilisé par le propriétaire de l'API pour provisionner des clients
+ * @swagger
+ * /admin/users:
+ *   post:
+ *     summary: Créer un utilisateur avec sa clé API
+ *     description: Utilisé par le propriétaire de l'API pour provisionner des clients
+ *     tags: [Admin]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email de l'utilisateur
+ *               name:
+ *                 type: string
+ *                 description: Nom optionnel pour la clé API
+ *               expires_in_days:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: Durée d'expiration en jours (optionnel)
+ *           example:
+ *             email: "client@exemple.com"
+ *             name: "Clé API Client Test"
+ *             expires_in_days: 365
+ *     responses:
+ *       201:
+ *         description: Utilisateur et clé API créés avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 apiKey:
+ *                   type: object
+ *                   properties:
+ *                     key:
+ *                       type: string
+ *                       description: La clé API générée
+ *                     name:
+ *                       type: string
+ *                       description: Nom de la clé
+ *                     expires_at:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *                       description: Date d'expiration
+ *       400:
+ *         description: Données invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Clé API manquante ou invalide
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Email déjà utilisé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/users', createUserValidation, async (req, res) => {
     const errors = validationResult(req);

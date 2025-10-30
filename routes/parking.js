@@ -7,8 +7,54 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 /**
- * POST /parking
- * Sauvegarder une nouvelle position
+ * @swagger
+ * /api/v1/parking:
+ *   post:
+ *     summary: Sauvegarder une nouvelle position de stationnement
+ *     tags: [Parking]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ParkingRequest'
+ *           example:
+ *             latitude: 48.8566
+ *             longitude: 2.3522
+ *             address: "Place de la Concorde, Paris"
+ *             note: "Stationnement près du musée"
+ *     responses:
+ *       201:
+ *         description: Position enregistrée avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 parking:
+ *                   $ref: '#/components/schemas/Parking'
+ *       401:
+ *         description: Clé API manquante ou invalide
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       422:
+ *         description: Données de validation invalides
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/', verifyApiKey, parkingValidation, validate, async (req, res) => {
     try {
@@ -46,8 +92,41 @@ router.post('/', verifyApiKey, parkingValidation, validate, async (req, res) => 
 });
 
 /**
- * GET /parking/current
- * Obtenir la dernière position enregistrée
+ * @swagger
+ * /api/v1/parking/current:
+ *   get:
+ *     summary: Obtenir la dernière position enregistrée
+ *     tags: [Parking]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     responses:
+ *       200:
+ *         description: Dernière position récupérée avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 parking:
+ *                   $ref: '#/components/schemas/Parking'
+ *       401:
+ *         description: Clé API manquante ou invalide
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Aucune position trouvée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/current', verifyApiKey, async (req, res) => {
     try {
@@ -88,8 +167,68 @@ router.get('/current', verifyApiKey, async (req, res) => {
 });
 
 /**
- * GET /parking/history
- * Récupérer l'historique des positions
+ * @swagger
+ * /api/v1/parking/history:
+ *   get:
+ *     summary: Récupérer l'historique des positions
+ *     tags: [Parking]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Nombre maximum d'éléments à retourner
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *           minimum: 0
+ *         description: Nombre d'éléments à ignorer (pagination)
+ *     responses:
+ *       200:
+ *         description: Historique récupéré avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 parkings:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Parking'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Nombre total d'éléments
+ *                     limit:
+ *                       type: integer
+ *                       description: Limite utilisée
+ *                     offset:
+ *                       type: integer
+ *                       description: Offset utilisé
+ *                     hasMore:
+ *                       type: boolean
+ *                       description: Indique s'il y a plus d'éléments
+ *       401:
+ *         description: Clé API manquante ou invalide
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/history', verifyApiKey, async (req, res) => {
     try {
@@ -131,8 +270,48 @@ router.get('/history', verifyApiKey, async (req, res) => {
 });
 
 /**
- * DELETE /parking/:id
- * Supprimer une position
+ * @swagger
+ * /api/v1/parking/{id}:
+ *   delete:
+ *     summary: Supprimer une position de stationnement
+ *     tags: [Parking]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la position à supprimer
+ *     responses:
+ *       200:
+ *         description: Position supprimée avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Clé API manquante ou invalide
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Position introuvable ou non autorisée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.delete('/:id', verifyApiKey, async (req, res) => {
     try {
@@ -172,8 +351,66 @@ router.delete('/:id', verifyApiKey, async (req, res) => {
 });
 
 /**
- * PATCH /parking/:id
- * Modifier une position (note, adresse)
+ * @swagger
+ * /api/v1/parking/{id}:
+ *   patch:
+ *     summary: Modifier une position de stationnement
+ *     tags: [Parking]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la position à modifier
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               address:
+ *                 type: string
+ *                 description: Nouvelle adresse
+ *               note:
+ *                 type: string
+ *                 description: Nouvelle note
+ *           example:
+ *             address: "123 Rue de la Paix, Paris"
+ *             note: "Stationnement mis à jour"
+ *     responses:
+ *       200:
+ *         description: Position mise à jour avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 parking:
+ *                   $ref: '#/components/schemas/Parking'
+ *       401:
+ *         description: Clé API manquante ou invalide
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Position introuvable ou non autorisée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.patch('/:id', verifyApiKey, async (req, res) => {
     try {
