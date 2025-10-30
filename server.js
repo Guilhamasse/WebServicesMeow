@@ -1,74 +1,87 @@
+// server.js
 import express from 'express';
-import 'dotenv/config';
 import helmet from 'helmet';
 import cors from 'cors';
-
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import authRoutes from './routes/auth.js';
-import parkingRoutes from './routes/parking.js';
-import adminRoutes from './routes/admin.js';
+import router from './routes/router.js'; // ✅ Routeur centralisé
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 const prisma = new PrismaClient();
+const PORT = process.env.PORT || 3000;
 
-// Middlewares de sécurité
+/* ----------------------------- 🔒 Sécurité ----------------------------- */
 app.use(helmet());
 app.use(cors({
-    origin: process.env.FRONTEND_URL || '*',
-    credentials: true
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
 }));
 
+/* ---------------------------- ⚙️ Middlewares ---------------------------- */
 app.use(express.json());
 
-// Routes
+/* ------------------------------- 🧭 Routes ------------------------------ */
+// Page d’accueil
 app.get('/', (req, res) => {
-    res.json({
-        message: 'TrackMe API v1.0',
-        description: 'API pour gérer vos emplacements de parking',
-        documentation: 'Consultez /api/v1 pour les endpoints disponibles',
-        endpoints: {
-            auth: '/api/v1/auth',
-            parking: '/api/v1/parking'
-        }
-    });
+  res.json({
+    message: '🚗 TrackMe API v1.0',
+    description: 'API pour gérer vos emplacements de parking et vos clés API.',
+    documentation: 'Consultez /api/v1 pour les endpoints disponibles.',
+    endpoints: {
+      auth: '/api/v1/auth',
+      parking: '/api/v1/parking',
+      admin: '/api/v1/admin'
+    }
+  });
 });
 
-// Routes API publiques (pour les clients externes)
-app.use('/api/v1/parking', parkingRoutes);
+// ✅ Toutes les routes versionnées
+app.use('/api/v1', router);
 
-// Routes admin (pour créer et gérer les utilisateurs/clés API)
-app.use('/admin', adminRoutes);
-
-// Routes auth (optionnel, pour gérer votre propre accès admin)
-app.use('/api/v1/auth', authRoutes);
-
-// Gestion des erreurs 404
+/* ---------------------------- 🚫 404 Not Found ---------------------------- */
 app.use((req, res) => {
-    res.status(404).json({
-        error: 'Route non trouvée',
-        message: 'L\'endpoint demandé n\'existe pas',
-        path: req.path
-    });
+  res.status(404).json({
+    error: 'Route non trouvée',
+    message: 'L’endpoint demandé n’existe pas',
+    path: req.path
+  });
 });
 
-// Test de connexion au démarrage
-prisma.$connect()
-    .then(() => {
-        console.log('✅ Connexion à Neon réussie');
-        // Démarrer le serveur après la connexion
-        app.listen(PORT, () => {
-            console.log(`✅ Server running on http://localhost:${PORT}`);
-            console.log(`📍 API Base URL: http://localhost:${PORT}/api/v1`);
-        });
-    })
-    .catch((error) => {
-        console.error('❌ Erreur de connexion à Neon:', error.message);
-        process.exit(1);
-    });
+/* -------------------------- 🧠 Gestion des erreurs -------------------------- */
+app.use((err, req, res, next) => {
+  console.error('🔥 Erreur serveur:', err);
+  res.status(err.status || 500).json({
+    error: 'Erreur serveur',
+    message: err.message || 'Une erreur interne est survenue'
+  });
+});
 
-// Gestion des erreurs non capturées
-process.on('unhandledRejection', (error) => {
-    console.error('Unhandled Rejection:', error);
+/* -------------------------- 🔌 Connexion à la DB --------------------------- */
+async function startServer() {
+  try {
+    await prisma.$connect();
+    console.log('✅ Connexion à Neon réussie');
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Serveur en cours sur http://localhost:${PORT}`);
+      console.log(`📍 Base API: http://localhost:${PORT}/api/v1`);
+    });
+  } catch (error) {
+    console.error('❌ Erreur de connexion à Neon:', error.message);
     process.exit(1);
+  }
+}
+
+/* ---------------------------- 🧩 Gestion globale --------------------------- */
+process.on('unhandledRejection', (error) => {
+  console.error('⚠️ Unhandled Rejection:', error);
+  process.exit(1);
 });
+
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error);
+  process.exit(1);
+});
+
+/* ------------------------------- ▶️ Start ------------------------------- */
+startServer();
