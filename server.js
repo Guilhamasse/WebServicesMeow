@@ -2,8 +2,14 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
 import 'dotenv/config';
+
 import { PrismaClient } from '@prisma/client';
+import { specs } from './swagger.config.js';
+import authRoutes from './routes/auth.js';
+import parkingRoutes from './routes/parking.js';
+import adminRoutes from './routes/admin.js';
 import router from './routes/router.js'; // ✅ Routeur centralisé
 
 const app = express();
@@ -20,19 +26,53 @@ app.use(cors({
 /* ---------------------------- ⚙️ Middlewares ---------------------------- */
 app.use(express.json());
 
-/* ------------------------------- 🧭 Routes ------------------------------ */
-// Page d’accueil
-app.get('/', (req, res) => {
-  res.json({
-    message: '🚗 TrackMe API v1.0',
-    description: 'API pour gérer vos emplacements de parking et vos clés API.',
-    documentation: 'Consultez /api/v1 pour les endpoints disponibles.',
-    endpoints: {
-      auth: '/api/v1/auth',
-      parking: '/api/v1/parking',
-      admin: '/api/v1/admin'
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Page d'accueil de l'API
+ *     description: Informations générales sur l'API WebServices Meow
+ *     tags: [General]
+ *     responses:
+ *       200:
+ *         description: Informations sur l'API
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 documentation:
+ *                   type: string
+ *                 endpoints:
+ *                   type: object
+ */
+
+// Documentation Swagger
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'WebServices Meow API Documentation',
+    swaggerOptions: {
+        persistAuthorization: true
     }
-  });
+}));
+
+// Routes
+app.get('/', (req, res) => {
+    res.json({
+        message: 'TrackMe API v1.0',
+        description: 'API pour gérer vos emplacements de parking',
+        documentation: 'Consultez /api-docs pour la documentation Swagger complète',
+        swagger_ui: 'http://localhost:3000/api-docs',
+        endpoints: {
+            auth: '/api/v1/auth',
+            parking: '/api/v1/parking',
+            admin: '/admin'
+        }
+    });
 });
 
 // ✅ Toutes les routes versionnées
