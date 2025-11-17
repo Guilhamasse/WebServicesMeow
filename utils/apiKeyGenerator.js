@@ -15,6 +15,29 @@ export const generateApiKey = () => {
 };
 
 /**
+ * Hash une clé API avec SHA-256
+ * @param {string} apiKey - La clé API à hasher
+ * @returns {string} Le hash de la clé
+ */
+export const hashApiKey = (apiKey) => {
+    return crypto.createHash('sha256').update(apiKey).digest('hex');
+};
+
+/**
+ * Extrait le préfixe d'une clé API
+ * @param {string} apiKey - La clé API
+ * @returns {string} Le préfixe (ex: tk_live_)
+ */
+export const extractPrefix = (apiKey) => {
+    if (!apiKey || typeof apiKey !== 'string') {
+        return '';
+    }
+    
+    const match = apiKey.match(/^(tk_\w+_)/);
+    return match ? match[1] : '';
+};
+
+/**
  * Valide le format d'une clé API
  * @param {string} apiKey - La clé API à valider
  * @returns {boolean} true si valide, false sinon
