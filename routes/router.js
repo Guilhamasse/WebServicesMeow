@@ -2,7 +2,7 @@
 import express from 'express';
 import adminRoutes from './admin.js';
 import authRoutes from './auth.js';
-import parkingRoutes from './parking.routes.js';
+import parkingRoutes from './parking.js';
  
 const router = express.Router();
  

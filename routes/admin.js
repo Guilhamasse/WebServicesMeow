@@ -1,8 +1,6 @@
 // routes/admin.routes.js
 import express from 'express';
 import { AdminController } from '../controllers/admin.controller.js';
-import { PrismaClient } from '@prisma/client';
-import { generateApiKey, hashApiKey, extractPrefix } from '../utils/apiKeyGenerator.js';
 import { body, validationResult } from 'express-validator';
 
 const router = express.Router();

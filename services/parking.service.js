@@ -2,59 +2,55 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-
 export async function createParking(userId, { latitude, longitude, address, note }) {
-return prisma.parking.create({
-data: { user_id: userId, latitude, longitude, address, note },
-include: { user: { select: { id: true, email: true } } },
-});
+    return prisma.parking.create({
+        data: { user_id: userId, latitude, longitude, address, note },
+        include: { user: { select: { id: true, email: true } } },
+    });
 }
 
 
 export async function getLatestParking(userId) {
-return prisma.parking.findFirst({
-where: { user_id: userId },
-orderBy: { created_at: 'desc' },
-include: { user: { select: { id: true, email: true } } },
-});
+    return prisma.parking.findFirst({
+        where: { user_id: userId },
+        orderBy: { created_at: 'desc' },
+        include: { user: { select: { id: true, email: true } } },
+    });
 }
 
 
 export async function getParkingHistory(userId, limit = 50, offset = 0) {
-const [parkings, total] = await Promise.all([
-prisma.parking.findMany({
-where: { user_id: userId },
-orderBy: { created_at: 'desc' },
-take: limit,
-skip: offset,
-}),
-prisma.parking.count({ where: { user_id: userId } }),
-]);
+    const [parkings, total] = await Promise.all([
+        prisma.parking.findMany({
+            where: { user_id: userId },
+            orderBy: { created_at: 'desc' },
+            take: limit,
+            skip: offset,
+        }),
+        prisma.parking.count({ where: { user_id: userId } }),
+    ]);
 
-
-return { parkings, total };
+    return { parkings, total };
 }
 
 
 export async function findOwnedParking(userId, id) {
-return prisma.parking.findFirst({ where: { id, user_id: userId } });
+    return prisma.parking.findFirst({ where: { id, user_id: userId } });
 }
 
 
 export async function updateParking(userId, id, data) {
-const exists = await findOwnedParking(userId, id);
-if (!exists) return null;
+    const exists = await findOwnedParking(userId, id);
+    if (!exists) return null;
 
-
-return prisma.parking.update({ where: { id }, data });
+    return prisma.parking.update({ where: { id }, data });
 }
 
 
 export async function deleteParking(userId, id) {
-const exists = await findOwnedParking(userId, id);
-if (!exists) return false;
+    const exists = await findOwnedParking(userId, id);
+    if (!exists) return false;
 
-
-await prisma.parking.delete({ where: { id } });
-return true;
+    await prisma.parking.delete({ where: { id } });
+    return true;
 }
