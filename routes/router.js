@@ -1,6 +1,6 @@
 // routes/router.js
 import express from 'express';
-import adminRoutes from './admin.routes.js';
+import adminRoutes from './admin.js';
 import authRoutes from './auth.js';
 import parkingRoutes from './parking.routes.js';
  
