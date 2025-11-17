@@ -62,7 +62,7 @@ const response = await fetch('http://localhost:3000/api/v1/parking/current', {
     "created_at": "2024-01-01T00:00:00.000Z",
     "expires_at": "2025-01-01T00:00:00.000Z"
   },
-  "warning": "⚠️ Conservez cette clé en sécurité, elle ne sera plus affichée après cette réponse"
+  "warning": "⚠️ Conservez cette clé en sécurité - Cette clé ne sera affichée qu'une seule fois"
 }
 ```
 
@@ -78,7 +78,7 @@ const response = await fetch('http://localhost:3000/api/v1/parking/current', {
   "apiKeys": [
     {
       "id": 1,
-      "key": "tk_live_aBc123...xyz789",
+      "key_prefix": "tk_live_***",
       "name": "Clé API mobile",
       "is_active": true,
       "created_at": "2024-01-01T00:00:00.000Z",
@@ -207,10 +207,12 @@ await deleteApiKey(oldKeyId);
 
 ### Infrastructure
 
-- Les clés sont stockées en hachage dans la base de données
-- Chaque clé est unique (contrainte `@unique`)
+- **Clés hashées avec SHA-256** - Les clés sont hashées dans la base de données
+- **Seuls le hash et le préfixe stockés** - La clé en clair n'est jamais stockée
+- **Vérification par hash** - Le middleware hash la clé fournie et compare avec le hash stocké
 - Support des dates d'expiration
 - Possibilité de désactiver une clé sans la supprimer
+- La clé en clair n'est affichée qu'une seule fois lors de la création
 
 ### Traçabilité
 
@@ -222,9 +224,9 @@ await deleteApiKey(oldKeyId);
 
 1. **S'inscrire ou se connecter** via `/auth/register` ou `/auth/login`
 2. **Générer une clé API** via `/api-keys` avec le token JWT
-3. **Copier la clé** (elle ne sera plus affichée après)
+3. **Copier la clé** immédiatement - elle ne sera affichée qu'une seule fois
 4. **Utiliser la clé** dans toutes les requêtes vers les endpoints parking
-5. **Gérer les clés** via les endpoints `/api-keys`
+5. **Gérer les clés** via les endpoints `/api-keys` (seul le préfixe sera visible)
 
 ## Dépannage
 
