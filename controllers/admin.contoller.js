@@ -1,19 +1,11 @@
 // controllers/admin.controller.js
-import { validationResult } from 'express-validator';
 import { AdminService } from '../services/admin.service.js';
 
 export class AdminController {
     static async createUser(req, res) {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                error: 'Erreur de validation',
-                details: errors.array()
-            });
-        }
-
         try {
             const { email, name, expires_in_days } = req.body;
+
             const result = await AdminService.createUser(email, name, expires_in_days);
 
             res.status(201).json({
@@ -59,6 +51,7 @@ export class AdminController {
             const { name, expires_in_days } = req.body;
 
             const apiKey = await AdminService.createApiKeyForUser(id, name, expires_in_days);
+
             res.status(201).json({
                 message: 'Clé API créée avec succès',
                 apiKey,
@@ -76,6 +69,7 @@ export class AdminController {
     static async deactivateApiKey(req, res) {
         try {
             const { id } = req.params;
+
             const result = await AdminService.deactivateApiKey(id);
             res.json(result);
         } catch (error) {

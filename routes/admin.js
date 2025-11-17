@@ -1,19 +1,33 @@
 // routes/admin.routes.js
 import express from 'express';
-import { body } from 'express-validator';
 import { AdminController } from '../controllers/admin.controller.js';
+
+import { 
+    validateWithSchema,
+    adminCreateUserSchema,
+    adminApiKeySchema
+} from '../middleware/validation.js';
 
 const router = express.Router();
 
-const createUserValidation = [
-    body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
-    body('name').optional().isString().withMessage('Le nom doit être une chaîne de caractères'),
-    body('expires_in_days').optional().isInt({ min: 1 }).withMessage('Durée invalide')
-];
+// 🟢 Créer un utilisateur + clé API
+router.post(
+    '/users',
+    validateWithSchema(adminCreateUserSchema),
+    AdminController.createUser
+);
 
-router.post('/users', createUserValidation, AdminController.createUser);
+// 🟢 Lister les utilisateurs
 router.get('/users', AdminController.listUsers);
-router.post('/users/:id/api-keys', AdminController.createApiKey);
+
+// 🟢 Créer une API key pour un utilisateur
+router.post(
+    '/users/:id/api-keys',
+    validateWithSchema(adminApiKeySchema),
+    AdminController.createApiKey
+);
+
+// 🟡 Désactiver une API key
 router.delete('/api-keys/:id', AdminController.deactivateApiKey);
 
 export default router;
