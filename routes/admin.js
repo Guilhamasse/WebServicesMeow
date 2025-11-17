@@ -1,10 +1,15 @@
 // routes/admin.routes.js
 import express from 'express';
-import { body } from 'express-validator';
 import { AdminController } from '../controllers/admin.controller.js';
+import { PrismaClient } from '@prisma/client';
+import { generateApiKey, hashApiKey, extractPrefix } from '../utils/apiKeyGenerator.js';
+import { body, validationResult } from 'express-validator';
 
 const router = express.Router();
 
+/**
+ * Validation pour créer un user
+*/
 const createUserValidation = [
     body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
     body('name').optional().isString().withMessage('Le nom doit être une chaîne de caractères'),

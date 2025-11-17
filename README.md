@@ -61,10 +61,13 @@ Vous recevez :
     "email": "client@example.com"
   },
   "apiKey": {
-    "key": "tk_live_..."
-  }
+    "key": "tk_live_aBc123XyZ789..."
+  },
+  "warning": "⚠️ Conservez ces informations en sécurité - Cette clé ne sera affichée qu'une seule fois"
 }
 ```
+
+⚠️ **Important** : La clé en clair ne sera affichée qu'une seule fois lors de la création. Elle est ensuite hashée (SHA-256) et stockée dans la base de données.
 
 ### 2️⃣ Vous envoyez la clé API au client
 
@@ -320,6 +323,7 @@ Authorization: Bearer <token>
 ## 🔒 Sécurité
 
 - Mots de passe hashés avec bcrypt (salt rounds: 10)
+- **Clés API hashées avec SHA-256** - Les clés API sont stockées uniquement en hash
 - Authentification JWT avec expiration de 7 jours
 - Helmet pour sécuriser les headers HTTP
 - CORS configuré pour autoriser les requêtes depuis le frontend
@@ -353,6 +357,17 @@ Authorization: Bearer <token>
 - `address` (TEXT, nullable)
 - `note` (TEXT, nullable)
 - `created_at` (TIMESTAMP)
+
+### Table `ApiKey`
+- `id` (INT, PRIMARY KEY)
+- `user_id` (INT, FOREIGN KEY -> User.id)
+- `key_hash` (TEXT, nullable) - Hash SHA-256 de la clé API
+- `key_prefix` (TEXT, nullable) - Préfixe de la clé (ex: tk_live_)
+- `name` (TEXT, nullable)
+- `last_used_at` (TIMESTAMP, nullable)
+- `created_at` (TIMESTAMP)
+- `expires_at` (TIMESTAMP, nullable)
+- `is_active` (BOOLEAN)
 
 ## 🧪 Test
 

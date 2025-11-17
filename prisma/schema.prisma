@@ -32,7 +32,8 @@ model Parking {
 model ApiKey {
   id          Int      @id @default(autoincrement())
   user_id     Int
-  key         String   @unique
+  key_hash    String?   // Hash de la clé API
+  key_prefix  String?   // Préfixe pour identification (ex: tk_live_)
   name        String?
   last_used_at DateTime?
   created_at  DateTime @default(now())
@@ -41,5 +42,4 @@ model ApiKey {
   user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
-  @@index([key])
 }

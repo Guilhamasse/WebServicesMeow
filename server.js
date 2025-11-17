@@ -37,6 +37,8 @@ app.get('/', (req, res) => {
 
 // ✅ Toutes les routes versionnées
 app.use('/api/v1', router);
+app.use('/api/v1/parking', parkingRoutes);
+
 
 /* ---------------------------- 🚫 404 Not Found ---------------------------- */
 app.use((req, res) => {

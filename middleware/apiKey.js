@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { hashApiKey } from '../utils/apiKeyGenerator.js';
 
 const prisma = new PrismaClient();
 
@@ -18,9 +19,12 @@ export const verifyApiKey = async (req, res, next) => {
             });
         }
 
-        // Rechercher la clé API dans la base de données
+        // Hasher la clé API fournie
+        const apiKeyHash = hashApiKey(apiKey);
+
+        // Rechercher la clé API dans la base de données par hash
         const keyRecord = await prisma.apiKey.findUnique({
-            where: { key: apiKey },
+            where: { key_hash: apiKeyHash },
             include: {
                 user: {
                     select: {
@@ -88,4 +92,3 @@ export const verifyApiKeyOwner = async (req, res, next) => {
         });
     }
 };
-

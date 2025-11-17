@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "ApiKey" ADD COLUMN IF NOT EXISTS "key_hash" TEXT,
+ADD COLUMN IF NOT EXISTS "key_prefix" TEXT;
+
