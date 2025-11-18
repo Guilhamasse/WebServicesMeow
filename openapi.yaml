@@ -462,8 +462,10 @@ paths:
   /api/v1/admin/users:
     post:
       summary: Créer un nouvel utilisateur avec une clé API
-      description: Crée un utilisateur et génère automatiquement une clé API pour lui
+      description: Crée un utilisateur et génère automatiquement une clé API pour lui. Nécessite le rôle admin.
       tags: [Admin]
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -513,6 +515,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Non autorisé - Token manquant, invalide ou utilisateur sans rôle admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Accès interdit - Rôle admin requis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: Email déjà utilisé
           content:
@@ -528,8 +542,10 @@ paths:
 
     get:
       summary: Lister tous les utilisateurs
-      description: Récupère la liste de tous les utilisateurs avec leurs clés API et statistiques
+      description: Récupère la liste de tous les utilisateurs avec leurs clés API et statistiques. Nécessite le rôle admin.
       tags: [Admin]
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Liste des utilisateurs récupérée avec succès
@@ -584,6 +600,18 @@ paths:
                                 description: Clé masquée (seuls les premiers et derniers caractères sont visibles)
                   total:
                     type: integer
+        '401':
+          description: Non autorisé - Token manquant, invalide ou utilisateur sans rôle admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Accès interdit - Rôle admin requis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Erreur serveur
           content:
@@ -594,8 +622,10 @@ paths:
   /api/v1/admin/users/{id}/api-keys:
     post:
       summary: Créer une nouvelle clé API pour un utilisateur
-      description: Génère une nouvelle clé API pour un utilisateur existant
+      description: Génère une nouvelle clé API pour un utilisateur existant. Nécessite le rôle admin.
       tags: [Admin]
+      security:
+        - BearerAuth: []
       parameters:
         - in: path
           name: id
@@ -645,6 +675,18 @@ paths:
                   warning:
                     type: string
                     example: "⚠️ Conservez cette clé en sécurité"
+        '401':
+          description: Non autorisé - Token manquant, invalide ou utilisateur sans rôle admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Accès interdit - Rôle admin requis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Utilisateur introuvable
           content:
@@ -661,8 +703,10 @@ paths:
   /api/v1/admin/api-keys/{id}:
     delete:
       summary: Désactiver une clé API
-      description: Désactive une clé API (ne la supprime pas, mais la rend inutilisable)
+      description: Désactive une clé API (ne la supprime pas, mais la rend inutilisable). Nécessite le rôle admin.
       tags: [Admin]
+      security:
+        - BearerAuth: []
       parameters:
         - in: path
           name: id
@@ -681,6 +725,18 @@ paths:
                   message:
                     type: string
                     example: "Clé API désactivée avec succès"
+        '401':
+          description: Non autorisé - Token manquant, invalide ou utilisateur sans rôle admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Accès interdit - Rôle admin requis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Clé API introuvable
           content:
@@ -718,6 +774,11 @@ components:
           type: string
           format: email
           description: Adresse email de l'utilisateur
+        role:
+          type: string
+          enum: [user, admin]
+          default: user
+          description: Rôle de l'utilisateur (user ou admin)
         created_at:
           type: string
           format: date-time
