@@ -68,9 +68,7 @@ router.post('/login', validateWithSchema(loginSchema), async (req, res) => {
     }
 });
 
-/**
- * GET /auth/profile
- */
+// GET /api/v1/auth/profile - Récupérer le profil de l'utilisateur connecté
 router.get('/profile', authenticateToken, async (req, res) => {
     try {
         const user = await prisma.user.findUnique({

@@ -1,6 +1,6 @@
 // services/admin.service.js
 import { PrismaClient } from '@prisma/client';
-import { generateApiKey } from '../utils/apiKeyGenerator.js';
+import { generateApiKey, hashApiKey, extractPrefix } from '../utils/apiKeyGenerator.js';
 
 const prisma = new PrismaClient();
 
@@ -12,6 +12,8 @@ export class AdminService {
         }
 
         const apiKey = generateApiKey();
+        const keyHash = hashApiKey(apiKey);
+        const keyPrefix = extractPrefix(apiKey);
         let expires_at = null;
         if (expires_in_days) {
             const expiryDate = new Date();
@@ -21,19 +23,27 @@ export class AdminService {
 
         const result = await prisma.$transaction(async (tx) => {
             const user = await tx.user.create({
-                data: { email, password: 'disabled' }
+                data: { email, password: 'disabled', role: 'user' }
             });
 
             const apiKeyRecord = await tx.apiKey.create({
                 data: {
                     user_id: user.id,
-                    key: apiKey,
+                    key_hash: keyHash,
+                    key_prefix: keyPrefix,
                     name: name || `Clé pour ${email}`,
                     expires_at
                 }
             });
 
-            return { user, apiKey: apiKeyRecord };
+            // Retourner la clé en clair pour l'affichage (une seule fois)
+            return { 
+                user, 
+                apiKey: {
+                    ...apiKeyRecord,
+                    key: apiKey // Ajouter la clé en clair pour l'affichage
+                }
+            };
         });
 
         return result;
@@ -41,11 +51,16 @@ export class AdminService {
 
     static async listUsers() {
         const users = await prisma.user.findMany({
-            include: {
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                created_at: true,
                 apiKeys: {
                     select: {
                         id: true,
-                        key: true,
+                        key_hash: true,
+                        key_prefix: true,
                         name: true,
                         is_active: true,
                         created_at: true,
@@ -62,12 +77,18 @@ export class AdminService {
         return users.map(user => ({
             id: user.id,
             email: user.email,
+            role: user.role,
             created_at: user.created_at,
             apiKeysCount: user._count.apiKeys,
             parkingsCount: user._count.parkings,
             apiKeys: user.apiKeys.map(k => ({
-                ...k,
-                key: k.key.substring(0, 15) + '...' + k.key.substring(k.key.length - 8)
+                id: k.id,
+                name: k.name,
+                is_active: k.is_active,
+                created_at: k.created_at,
+                last_used_at: k.last_used_at,
+                expires_at: k.expires_at,
+                key_prefix: k.key_prefix ? `${k.key_prefix}***` : null
             }))
         }));
     }
@@ -79,6 +100,8 @@ export class AdminService {
         }
 
         const apiKey = generateApiKey();
+        const keyHash = hashApiKey(apiKey);
+        const keyPrefix = extractPrefix(apiKey);
         let expires_at = null;
         if (expires_in_days) {
             const expiryDate = new Date();
@@ -89,13 +112,18 @@ export class AdminService {
         const apiKeyRecord = await prisma.apiKey.create({
             data: {
                 user_id: parseInt(userId),
-                key: apiKey,
+                key_hash: keyHash,
+                key_prefix: keyPrefix,
                 name: name || `Clé API - ${new Date().toLocaleDateString()}`,
                 expires_at
             }
         });
 
-        return apiKeyRecord;
+        // Retourner la clé en clair pour l'affichage (une seule fois)
+        return {
+            ...apiKeyRecord,
+            key: apiKey // Ajouter la clé en clair pour l'affichage
+        };
     }
 
     static async deactivateApiKey(id) {

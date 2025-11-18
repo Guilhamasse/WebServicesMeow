@@ -25,7 +25,7 @@ export const authenticateToken = async (req, res, next) => {
         // Récupérer l'utilisateur depuis la base de données
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },
-            select: { id: true, email: true, created_at: true }
+            select: { id: true, email: true, role: true, created_at: true }
         });
 
         if (!user) {
