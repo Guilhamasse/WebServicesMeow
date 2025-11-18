@@ -8,55 +8,7 @@ import { authenticateToken } from '../middleware/auth.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
-/**
- * @swagger
- * /api/v1/auth/register:
- *   post:
- *     summary: Créer un nouveau compte utilisateur
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/RegisterRequest'
- *           example:
- *             email: "utilisateur@exemple.com"
- *             password: "motdepasse123"
- *     responses:
- *       201:
- *         description: Compte créé avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *                 token:
- *                   type: string
- *                   description: Token JWT pour l'authentification
- *       409:
- *         description: Email déjà utilisé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       422:
- *         description: Données de validation invalides
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
+// POST /api/v1/auth/register - Créer un nouveau compte utilisateur
 router.post('/register', registerValidation, validate, async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -110,61 +62,7 @@ router.post('/register', registerValidation, validate, async (req, res) => {
     }
 });
 
-/**
- * @swagger
- * /api/v1/auth/login:
- *   post:
- *     summary: Se connecter et recevoir un token JWT
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/LoginRequest'
- *           example:
- *             email: "utilisateur@exemple.com"
- *             password: "motdepasse123"
- *     responses:
- *       200:
- *         description: Connexion réussie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 user:
- *                   allOf:
- *                     - $ref: '#/components/schemas/User'
- *                     - type: object
- *                       properties:
- *                         lastParking:
- *                           $ref: '#/components/schemas/Parking'
- *                           nullable: true
- *                 token:
- *                   type: string
- *                   description: Token JWT pour l'authentification
- *       401:
- *         description: Identifiants invalides
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       422:
- *         description: Données de validation invalides
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
+// POST /api/v1/auth/login - Se connecter et recevoir un token JWT
 router.post('/login', loginValidation, validate, async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -226,46 +124,7 @@ router.post('/login', loginValidation, validate, async (req, res) => {
     }
 });
 
-/**
- * @swagger
- * /api/v1/auth/profile:
- *   get:
- *     summary: Récupérer le profil de l'utilisateur connecté
- *     tags: [Authentication]
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: Profil utilisateur récupéré avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 user:
- *                   allOf:
- *                     - $ref: '#/components/schemas/User'
- *                     - type: object
- *                       properties:
- *                         lastParking:
- *                           $ref: '#/components/schemas/Parking'
- *                           nullable: true
- *                         parkingsCount:
- *                           type: integer
- *                           description: Nombre total de stationnements
- *       401:
- *         description: Non autorisé - Token manquant ou invalide
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
+// GET /api/v1/auth/profile - Récupérer le profil de l'utilisateur connecté
 router.get('/profile', authenticateToken, async (req, res) => {
     try {
         const user = await prisma.user.findUnique({

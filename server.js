@@ -7,9 +7,7 @@ import 'dotenv/config';
 
 import { PrismaClient } from '@prisma/client';
 import { specs } from './swagger.config.js';
-import authRoutes from './routes/auth.js';
 import parkingRoutes from './routes/parking.js';
-import adminRoutes from './routes/admin.js';
 import router from './routes/router.js'; // ✅ Routeur centralisé
 
 const app = express();
@@ -25,31 +23,6 @@ app.use(cors({
 
 /* ---------------------------- ⚙️ Middlewares ---------------------------- */
 app.use(express.json());
-
-/**
- * @swagger
- * /:
- *   get:
- *     summary: Page d'accueil de l'API
- *     description: Informations générales sur l'API WebServices Meow
- *     tags: [General]
- *     responses:
- *       200:
- *         description: Informations sur l'API
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 description:
- *                   type: string
- *                 documentation:
- *                   type: string
- *                 endpoints:
- *                   type: object
- */
 
 // Documentation Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {

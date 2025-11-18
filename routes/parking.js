@@ -12,24 +12,19 @@ destroy,
 
 const router = express.Router();
 
-
-// POST /parking — créer une nouvelle position
+// POST /api/v1/parking - Enregistrer une nouvelle position de parking
 router.post('/', verifyApiKey, parkingValidation, validate, create);
 
-
-// GET /parking/current — dernière position
+// GET /api/v1/parking/current - Récupérer la dernière position enregistrée
 router.get('/current', verifyApiKey, current);
 
-
-// GET /parking/history — historique paginé
+// GET /api/v1/parking/history - Récupérer l'historique des positions
 router.get('/history', verifyApiKey, history);
 
-
-// PATCH /parking/:id — maj note/adresse
+// PATCH /api/v1/parking/:id - Mettre à jour une position de parking
 router.patch('/:id', verifyApiKey, update);
 
-
-// DELETE /parking/:id — suppression
+// DELETE /api/v1/parking/:id - Supprimer une position de parking
 router.delete('/:id', verifyApiKey, destroy);
 
 

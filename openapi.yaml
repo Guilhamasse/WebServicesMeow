@@ -1,0 +1,887 @@
+openapi: 3.0.0
+info:
+  title: WebServices Meow API
+  version: 1.0.0
+  description: API de gestion de stationnements avec authentification et gestion d'utilisateurs
+  contact:
+    name: WebServices Meow
+    email: contact@webservicesmeow.com
+
+servers:
+  - url: http://localhost:3000
+    description: Serveur de développement
+
+tags:
+  - name: Authentication
+    description: Opérations d'authentification et de gestion des utilisateurs
+  - name: Parking
+    description: Gestion des stationnements
+  - name: Admin
+    description: Opérations d'administration
+  - name: General
+    description: Informations générales sur l'API
+
+paths:
+  /:
+    get:
+      summary: Page d'accueil de l'API
+      description: Informations générales sur l'API WebServices Meow
+      tags: [General]
+      responses:
+        '200':
+          description: Informations sur l'API
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  description:
+                    type: string
+                  documentation:
+                    type: string
+                  swagger_ui:
+                    type: string
+                  endpoints:
+                    type: object
+                    properties:
+                      auth:
+                        type: string
+                      parking:
+                        type: string
+                      admin:
+                        type: string
+
+  /api/v1/auth/register:
+    post:
+      summary: Créer un nouveau compte utilisateur
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: "utilisateur@exemple.com"
+              password: "motdepasse123"
+      responses:
+        '201':
+          description: Compte créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    description: Token JWT pour l'authentification
+        '409':
+          description: Email déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Données de validation invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/auth/login:
+    post:
+      summary: Se connecter et recevoir un token JWT
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "utilisateur@exemple.com"
+              password: "motdepasse123"
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    allOf:
+                      - $ref: '#/components/schemas/User'
+                      - type: object
+                        properties:
+                          lastParking:
+                            $ref: '#/components/schemas/Parking'
+                            nullable: true
+                  token:
+                    type: string
+                    description: Token JWT pour l'authentification
+        '401':
+          description: Identifiants invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Données de validation invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/auth/profile:
+    get:
+      summary: Récupérer le profil de l'utilisateur connecté
+      tags: [Authentication]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profil utilisateur récupéré avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    allOf:
+                      - $ref: '#/components/schemas/User'
+                      - type: object
+                        properties:
+                          lastParking:
+                            $ref: '#/components/schemas/Parking'
+                            nullable: true
+                          parkingsCount:
+                            type: integer
+                            description: Nombre total de stationnements
+        '401':
+          description: Non autorisé - Token manquant ou invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/parking:
+    post:
+      summary: Enregistrer une nouvelle position de parking
+      description: Crée un nouvel enregistrement de position GPS pour le parking de la voiture
+      tags: [Parking]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParkingRequest'
+            example:
+              latitude: 48.8566
+              longitude: 2.3522
+              address: "Place de la Bastille, 75011 Paris"
+              note: "Parking près du métro"
+      responses:
+        '201':
+          description: Position enregistrée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Position enregistrée avec succès"
+                  parking:
+                    $ref: '#/components/schemas/Parking'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Clé API manquante ou invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/parking/current:
+    get:
+      summary: Récupérer la dernière position enregistrée
+      description: Retourne la position de parking la plus récente pour l'utilisateur authentifié
+      tags: [Parking]
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Dernière position récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parking:
+                    $ref: '#/components/schemas/Parking'
+        '401':
+          description: Clé API manquante ou invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Aucune position trouvée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Aucune position trouvée"
+                  message:
+                    type: string
+                    example: "Vous n'avez pas encore enregistré de position"
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/parking/history:
+    get:
+      summary: Récupérer l'historique des positions
+      description: Retourne l'historique paginé des positions de parking
+      tags: [Parking]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+          description: Nombre maximum de résultats à retourner
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Nombre de résultats à ignorer (pour la pagination)
+      responses:
+        '200':
+          description: Historique récupéré avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parkings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Parking'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        description: Nombre total de positions
+                      limit:
+                        type: integer
+                        description: Nombre de résultats par page
+                      offset:
+                        type: integer
+                        description: Offset utilisé
+                      hasMore:
+                        type: boolean
+                        description: Indique s'il y a plus de résultats
+        '401':
+          description: Clé API manquante ou invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/parking/{id}:
+    patch:
+      summary: Mettre à jour une position de parking
+      description: Met à jour l'adresse ou la note d'une position existante
+      tags: [Parking]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de la position à mettre à jour
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateParkingRequest'
+            example:
+              address: "Nouvelle adresse, 75001 Paris"
+              note: "Parking souterrain"
+      responses:
+        '200':
+          description: Position mise à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Position mise à jour avec succès"
+                  parking:
+                    $ref: '#/components/schemas/Parking'
+        '401':
+          description: Clé API manquante ou invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Position introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Position introuvable"
+                  message:
+                    type: string
+                    example: "Cette position n'existe pas ou ne vous appartient pas"
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Supprimer une position de parking
+      description: Supprime définitivement une position de parking
+      tags: [Parking]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de la position à supprimer
+      responses:
+        '200':
+          description: Position supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Position supprimée avec succès"
+        '401':
+          description: Clé API manquante ou invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Position introuvable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Position introuvable"
+                  message:
+                    type: string
+                    example: "Cette position n'existe pas ou ne vous appartient pas"
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/admin/users:
+    post:
+      summary: Créer un nouvel utilisateur avec une clé API
+      description: Crée un utilisateur et génère automatiquement une clé API pour lui
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            example:
+              email: "client@example.com"
+              name: "Application mobile"
+              expires_in_days: 30
+      responses:
+        '201':
+          description: Utilisateur et clé API créés avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Utilisateur et clé API créés avec succès"
+                  user:
+                    $ref: '#/components/schemas/User'
+                  apiKey:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                        description: Clé API générée (affichée une seule fois)
+                        example: "tk_live_aBc123XyZ789..."
+                      name:
+                        type: string
+                        example: "Application mobile"
+                      created_at:
+                        type: string
+                        format: date-time
+                      expires_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                  warning:
+                    type: string
+                    example: "⚠️ Conservez ces informations en sécurité"
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: Lister tous les utilisateurs
+      description: Récupère la liste de tous les utilisateurs avec leurs clés API et statistiques
+      tags: [Admin]
+      responses:
+        '200':
+          description: Liste des utilisateurs récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        email:
+                          type: string
+                          format: email
+                        created_at:
+                          type: string
+                          format: date-time
+                        apiKeysCount:
+                          type: integer
+                          description: Nombre de clés API
+                        parkingsCount:
+                          type: integer
+                          description: Nombre de parkings
+                        apiKeys:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              name:
+                                type: string
+                              is_active:
+                                type: boolean
+                              created_at:
+                                type: string
+                                format: date-time
+                              last_used_at:
+                                type: string
+                                format: date-time
+                                nullable: true
+                              expires_at:
+                                type: string
+                                format: date-time
+                                nullable: true
+                              key:
+                                type: string
+                                description: Clé masquée (seuls les premiers et derniers caractères sont visibles)
+                  total:
+                    type: integer
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/admin/users/{id}/api-keys:
+    post:
+      summary: Créer une nouvelle clé API pour un utilisateur
+      description: Génère une nouvelle clé API pour un utilisateur existant
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de l'utilisateur
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+            example:
+              name: "Nouvelle clé API"
+              expires_in_days: 60
+      responses:
+        '201':
+          description: Clé API créée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Clé API créée avec succès"
+                  apiKey:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      user_id:
+                        type: integer
+                      key:
+                        type: string
+                        description: Clé API générée (affichée une seule fois)
+                      name:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+                      expires_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                  warning:
+                    type: string
+                    example: "⚠️ Conservez cette clé en sécurité"
+        '404':
+          description: Utilisateur introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/admin/api-keys/{id}:
+    delete:
+      summary: Désactiver une clé API
+      description: Désactive une clé API (ne la supprime pas, mais la rend inutilisable)
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de la clé API à désactiver
+      responses:
+        '200':
+          description: Clé API désactivée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Clé API désactivée avec succès"
+        '404':
+          description: Clé API introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenu via /auth/login
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Clé API pour l'authentification
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID unique de l'utilisateur
+        email:
+          type: string
+          format: email
+          description: Adresse email de l'utilisateur
+        created_at:
+          type: string
+          format: date-time
+          description: Date de création du compte
+
+    Parking:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID unique du stationnement
+        user_id:
+          type: integer
+          description: ID de l'utilisateur propriétaire
+        latitude:
+          type: number
+          format: float
+          description: Latitude GPS
+        longitude:
+          type: number
+          format: float
+          description: Longitude GPS
+        address:
+          type: string
+          description: Adresse du stationnement
+          nullable: true
+        note:
+          type: string
+          description: Note ou commentaire
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Date de création
+
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID unique de la clé API
+        user_id:
+          type: integer
+          description: ID de l'utilisateur propriétaire
+        key:
+          type: string
+          description: Clé API générée
+        name:
+          type: string
+          description: Nom de la clé API
+          nullable: true
+        last_used_at:
+          type: string
+          format: date-time
+          description: Dernière utilisation
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Date de création
+        expires_at:
+          type: string
+          format: date-time
+          description: Date d'expiration
+          nullable: true
+        is_active:
+          type: boolean
+          description: Statut actif/inactif
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Message d'erreur
+        details:
+          type: array
+          items:
+            type: string
+          description: Détails supplémentaires de l'erreur
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adresse email
+        password:
+          type: string
+          minLength: 6
+          description: Mot de passe (minimum 6 caractères)
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adresse email
+        password:
+          type: string
+          minLength: 6
+          description: Mot de passe (minimum 6 caractères)
+
+    ParkingRequest:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+          format: float
+          minimum: -90
+          maximum: 90
+          description: Latitude GPS (-90 à 90)
+        longitude:
+          type: number
+          format: float
+          minimum: -180
+          maximum: 180
+          description: Longitude GPS (-180 à 180)
+        address:
+          type: string
+          description: Adresse du stationnement
+        note:
+          type: string
+          description: Note ou commentaire
+
+    CreateUserRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adresse email de l'utilisateur
+        name:
+          type: string
+          description: Nom de la clé API (optionnel)
+        expires_in_days:
+          type: integer
+          minimum: 1
+          description: Nombre de jours avant expiration de la clé API (optionnel)
+
+    CreateApiKeyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nom de la clé API (optionnel)
+        expires_in_days:
+          type: integer
+          minimum: 1
+          description: Nombre de jours avant expiration (optionnel)
+
+    UpdateParkingRequest:
+      type: object
+      properties:
+        address:
+          type: string
+          description: Nouvelle adresse (optionnel)
+        note:
+          type: string
+          description: Nouvelle note (optionnel)
+
