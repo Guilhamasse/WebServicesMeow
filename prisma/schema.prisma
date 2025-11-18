@@ -32,7 +32,7 @@ model Parking {
 model ApiKey {
   id          Int      @id @default(autoincrement())
   user_id     Int
-  key_hash    String?   // Hash de la clé API
+  key_hash    String?   @unique // Hash de la clé API (unique car chaque hash correspond à une seule clé)
   key_prefix  String?   // Préfixe pour identification (ex: tk_live_)
   name        String?
   last_used_at DateTime?
