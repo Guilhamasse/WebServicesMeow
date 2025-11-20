@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test WebSocket Ultra Simple</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 15px; margin: 5px; font-size: 16px; }
+        #logs { height: 300px; overflow-y: auto; background: #f0f0f0; padding: 10px; }
+        input { width: 400px; padding: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Test WebSocket Ultra Simple</h1>
+    
+    <div class="section">
+        <h3>Test basique</h3>
+        <button onclick="alert('JavaScript fonctionne!')">Tester JavaScript</button>
+        <button onclick="testServer()">Tester le serveur</button>
+        <button onclick="loadSocketIO()">Charger Socket.IO</button>
+    </div>
+    
+    <div class="section">
+        <h3>Connexion WebSocket</h3>
+        <input type="text" id="tokenInput" placeholder="Collez votre token JWT ici">
+        <br><br>
+        <button onclick="connectNow()">CONNEXION DIRECTE</button>
+        <button onclick="disconnect()">Déconnecter</button>
+        <div id="status">Status: Déconnecté</div>
+    </div>
+    
+    <div class="section">
+        <h3>Logs</h3>
+        <button onclick="clearLogs()">Effacer</button>
+        <div id="logs">Logs apparaîtront ici...<br></div>
+    </div>
+
+    <script>
+        let socket = null;
+        
+        function addLog(message) {
+            const logs = document.getElementById('logs');
+            logs.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        function testServer() {
+            addLog('🔍 Test du serveur...');
+            fetch('/api-docs')
+                .then(response => {
+                    addLog('✅ Serveur répond: ' + response.status);
+                    return fetch('/socket.io/socket.io.js');
+                })
+                .then(response => {
+                    addLog('✅ Socket.IO disponible: ' + response.status);
+                })
+                .catch(error => {
+                    addLog('❌ Erreur serveur: ' + error.message);
+                });
+        }
+        
+        function loadSocketIO() {
+            addLog('📦 Chargement de Socket.IO...');
+            
+            if (typeof io !== 'undefined') {
+                addLog('✅ Socket.IO déjà chargé');
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = '/socket.io/socket.io.js';
+            script.onload = function() {
+                addLog('✅ Socket.IO chargé avec succès');
+                addLog('📋 Version Socket.IO: ' + (typeof io !== 'undefined' ? 'Disponible' : 'Non disponible'));
+            };
+            script.onerror = function() {
+                addLog('❌ Erreur lors du chargement de Socket.IO');
+            };
+            document.head.appendChild(script);
+        }
+        
+        function connectNow() {
+            const token = document.getElementById('tokenInput').value.trim();
+            
+            if (!token) {
+                alert('Veuillez entrer un token!');
+                return;
+            }
+            
+            addLog('🔑 Token reçu (longueur: ' + token.length + ')');
+            
+            if (typeof io === 'undefined') {
+                addLog('❌ Socket.IO pas chargé - chargement automatique...');
+                loadSocketIO();
+                setTimeout(() => connectNow(), 2000);
+                return;
+            }
+            
+            addLog('🔌 Création de la connexion Socket.IO...');
+            
+            try {
+                if (socket) {
+                    socket.disconnect();
+                }
+                
+                socket = io('http://localhost:3000', {
+                    auth: { token: token },
+                    timeout: 10000
+                });
+                
+                addLog('🔧 Socket créé, installation des événements...');
+                
+                socket.on('connect', function() {
+                    addLog('🎉 CONNEXION RÉUSSIE!');
+                    document.getElementById('status').textContent = 'Status: ✅ Connecté (ID: ' + socket.id + ')';
+                });
+                
+                socket.on('connected', function(data) {
+                    addLog('👤 Bienvenue: ' + JSON.stringify(data));
+                });
+                
+                socket.on('connect_error', function(error) {
+                    addLog('❌ ERREUR DE CONNEXION: ' + error.message);
+                    document.getElementById('status').textContent = 'Status: ❌ Erreur - ' + error.message;
+                });
+                
+                socket.on('disconnect', function(reason) {
+                    addLog('🔌 Déconnecté: ' + reason);
+                    document.getElementById('status').textContent = 'Status: ❌ Déconnecté';
+                });
+                
+                addLog('⏳ Connexion en cours...');
+                
+            } catch (error) {
+                addLog('💥 ERREUR CRITIQUE: ' + error.message);
+            }
+        }
+        
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                addLog('🔌 Déconnexion manuelle');
+            }
+        }
+        
+        // Auto-initialisation
+        window.addEventListener('load', function() {
+            addLog('🚀 Page chargée - JavaScript opérationnel');
+            addLog('📍 URL: ' + window.location.href);
+            addLog('🔧 Navigateur: ' + navigator.userAgent.split(' ').pop());
+        });
+    </script>
+</body>
+</html>

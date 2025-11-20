@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test WebSocket - Chronomètre Parking</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        input, button, select {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .logs {
+            height: 300px;
+            overflow-y: auto;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid #333;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        .log-entry.info { color: #87ceeb; }
+        .log-entry.success { color: #90ee90; }
+        .log-entry.warning { color: #ffd700; }
+        .log-entry.error { color: #ff6b6b; }
+        .timer-display {
+            font-size: 24px;
+            text-align: center;
+            padding: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .notification {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #ff6b6b;
+            background-color: #fff3cd;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 Test WebSocket - Chronomètre Parking</h1>
+        
+        <!-- Section de connexion -->
+        <div class="section">
+            <h3>🔌 Connexion WebSocket</h3>
+            <input type="text" id="token" placeholder="Token JWT (Bearer)" style="width: 300px;">
+            <button id="connectBtn" onclick="connectWebSocket()">Se connecter</button>
+            <button id="disconnectBtn" onclick="disconnectWebSocket()" disabled>Se déconnecter</button>
+            <div id="connectionStatus" class="status disconnected">❌ Déconnecté</div>
+        </div>
+
+        <!-- Section de test du chronomètre -->
+        <div class="section">
+            <h3>⏱️ Test Chronomètre</h3>
+            <input type="number" id="parkingId" placeholder="ID du parking" value="1">
+            <input type="number" id="duration" placeholder="Durée (secondes)" value="10">
+            <button id="startTimerBtn" onclick="startTimer()" disabled>Démarrer le chronomètre</button>
+            <button id="cancelTimerBtn" onclick="cancelTimer()" disabled>Annuler le chronomètre</button>
+            <button id="statusBtn" onclick="getTimerStatus()" disabled>Statut du timer</button>
+            
+            <div class="timer-display" id="timerDisplay">
+                ⏰ Aucun chronomètre actif
+            </div>
+        </div>
+
+        <!-- Section des notifications -->
+        <div class="section">
+            <h3>🔔 Dernière Notification</h3>
+            <div id="lastNotification">Aucune notification reçue</div>
+        </div>
+
+        <!-- Section des logs -->
+        <div class="section">
+            <h3>📋 Logs en temps réel</h3>
+            <button onclick="clearLogs()">Effacer les logs</button>
+            <div id="logs" class="logs"></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = null;
+        let timerInterval = null;
+        let timerEndTime = null;
+
+        // Vérifier que Socket.IO est chargé
+        if (typeof io === 'undefined') {
+            console.error('Socket.IO n\'est pas chargé !');
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('logs').innerHTML = '<div class="log-entry error">❌ Socket.IO non chargé. Vérifiez que le serveur fonctionne.</div>';
+            });
+        } else {
+            console.log('✅ Socket.IO chargé correctement');
+        }
+
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const startTimerBtn = document.getElementById('startTimerBtn');
+            const cancelTimerBtn = document.getElementById('cancelTimerBtn');
+            const statusBtn = document.getElementById('statusBtn');
+
+            if (connected) {
+                status.className = 'status connected';
+                status.textContent = '✅ Connecté';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                startTimerBtn.disabled = false;
+                cancelTimerBtn.disabled = false;
+                statusBtn.disabled = false;
+            } else {
+                status.className = 'status disconnected';
+                status.textContent = '❌ Déconnecté';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                startTimerBtn.disabled = true;
+                cancelTimerBtn.disabled = true;
+                statusBtn.disabled = true;
+            }
+        }
+
+        function connectWebSocket() {
+            const token = document.getElementById('token').value;
+            if (!token) {
+                alert('Veuillez entrer un token JWT');
+                return;
+            }
+
+            // Vérifier que Socket.IO est disponible
+            if (typeof io === 'undefined') {
+                log('❌ Socket.IO non disponible. Le serveur ne fonctionne peut-être pas.', 'error');
+                alert('Erreur: Socket.IO non chargé. Vérifiez que le serveur fonctionne sur http://localhost:3000');
+                return;
+            }
+
+            log('🔌 Tentative de connexion WebSocket...', 'info');
+            log('🔑 Token utilisé: ' + token.substring(0, 20) + '...', 'info');
+            
+            try {
+                socket = io('http://localhost:3000', {
+                    auth: {
+                        token: token
+                    },
+                    timeout: 10000,
+                    forceNew: true
+                });
+            } catch (error) {
+                log('❌ Erreur lors de la création de la connexion: ' + error.message, 'error');
+                return;
+            }
+
+            socket.on('connect', () => {
+                log('✅ Connexion WebSocket établie', 'success');
+                updateConnectionStatus(true);
+            });
+
+            socket.on('connected', (data) => {
+                log(`🎉 Message de bienvenue: ${data.message}`, 'success');
+                log(`👤 Utilisateur: ${data.email} (ID: ${data.userId})`, 'info');
+            });
+
+            socket.on('disconnect', (reason) => {
+                log(`❌ Connexion fermée: ${reason}`, 'error');
+                updateConnectionStatus(false);
+                clearInterval(timerInterval);
+            });
+
+            socket.on('timer_started', (data) => {
+                log(`⏱️ Chronomètre démarré: ${data.message}`, 'success');
+                log(`📍 Parking ID: ${data.parkingId}, Durée: ${data.duration}s`, 'info');
+                
+                timerEndTime = new Date(data.endTime);
+                updateTimerDisplay();
+                
+                timerInterval = setInterval(updateTimerDisplay, 1000);
+            });
+
+            socket.on('parking_time_expired', (data) => {
+                log(`🚨 NOTIFICATION: ${data.message}`, 'warning');
+                log(`📍 Lieu: ${data.location}`, 'info');
+                
+                // Afficher la notification
+                showNotification(data);
+                
+                clearInterval(timerInterval);
+                document.getElementById('timerDisplay').textContent = '⏰ Temps écoulé !';
+            });
+
+            socket.on('timer_cancelled', (data) => {
+                log(`❌ Chronomètre annulé: ${data.message}`, 'warning');
+                clearInterval(timerInterval);
+                document.getElementById('timerDisplay').textContent = '⏰ Chronomètre annulé';
+            });
+
+            socket.on('timer_status', (data) => {
+                if (data.active) {
+                    log(`📊 Timer actif - Parking: ${data.parkingId}, Restant: ${data.remaining}s`, 'info');
+                } else {
+                    log(`📊 Aucun timer actif`, 'info');
+                }
+            });
+
+            socket.on('timer_error', (data) => {
+                log(`❌ Erreur timer: ${data.error}`, 'error');
+                if (data.details) {
+                    log(`💡 Détails: ${data.details}`, 'error');
+                }
+            });
+
+            socket.on('connect_error', (error) => {
+                log(`❌ Erreur de connexion: ${error.message}`, 'error');
+                updateConnectionStatus(false);
+            });
+        }
+
+        function disconnectWebSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                log('🔌 Déconnexion manuelle', 'info');
+                clearInterval(timerInterval);
+            }
+        }
+
+        function startTimer() {
+            if (!socket) return;
+            
+            const parkingId = document.getElementById('parkingId').value;
+            const duration = document.getElementById('duration').value;
+            
+            if (!parkingId || !duration) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+
+            log(`▶️ Démarrage timer - Parking: ${parkingId}, Durée: ${duration}s`, 'info');
+            
+            socket.emit('start_parking_timer', {
+                parkingId: parseInt(parkingId),
+                duration: parseInt(duration)
+            });
+        }
+
+        function cancelTimer() {
+            if (!socket) return;
+            
+            log('⏹️ Demande d\'annulation du timer', 'info');
+            socket.emit('cancel_parking_timer');
+        }
+
+        function getTimerStatus() {
+            if (!socket) return;
+            
+            log('📊 Demande du statut du timer', 'info');
+            socket.emit('get_timer_status');
+        }
+
+        function updateTimerDisplay() {
+            if (!timerEndTime) return;
+            
+            const now = new Date();
+            const remaining = Math.max(0, Math.ceil((timerEndTime - now) / 1000));
+            
+            if (remaining > 0) {
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                document.getElementById('timerDisplay').textContent = 
+                    `⏰ Temps restant: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                document.getElementById('timerDisplay').textContent = '⏰ Temps écoulé !';
+                clearInterval(timerInterval);
+            }
+        }
+
+        function showNotification(data) {
+            const notificationDiv = document.getElementById('lastNotification');
+            notificationDiv.innerHTML = `
+                <div class="notification">
+                    <strong>${data.message}</strong><br>
+                    📍 <strong>Lieu:</strong> ${data.location}<br>
+                    ⏱️ <strong>Durée:</strong> ${data.duration} secondes<br>
+                    🕐 <strong>Expiré à:</strong> ${new Date(data.expiredAt).toLocaleTimeString()}<br>
+                    <br><strong>Recommandations:</strong>
+                    <ul>
+                        ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        // Initialisation
+        log('🚀 Interface de test WebSocket initialisée', 'success');
+        log('💡 Entrez votre token JWT et cliquez sur "Se connecter"', 'info');
+    </script>
+</body>
+</html>
