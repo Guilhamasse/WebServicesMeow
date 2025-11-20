@@ -23,7 +23,7 @@ export const verifyApiKey = async (req, res, next) => {
         const apiKeyHash = hashApiKey(apiKey);
 
         // Rechercher la clé API dans la base de données par hash
-        const keyRecord = await prisma.apiKey.findUnique({
+        const keyRecord = await prisma.apiKey.findFirst({
             where: { key_hash: apiKeyHash },
             include: {
                 user: {
