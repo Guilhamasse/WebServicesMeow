@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-TrackMe utilise un système de clés API pour sécuriser les appels à l'API REST. Chaque utilisateur peut générer plusieurs clés API.
+TrackMe utilise un système de clés API pour sécuriser les appels à l'API REST.
 
 ## Fonctionnement
 
