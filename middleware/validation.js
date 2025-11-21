@@ -41,6 +41,12 @@ export const loginSchema = z.object({
 /* -------------------------------------------------------------------------- */
 
 export const parkingSchema = z.object({
+    user_id: z
+        .number({
+            invalid_type_error: "Le user_id doit être un nombre",
+        })
+        .int("Le user_id doit être un entier")
+        .positive("Le user_id doit être positif"),
     latitude: z
         .number({
             invalid_type_error: "La latitude doit être un nombre",
@@ -55,6 +61,18 @@ export const parkingSchema = z.object({
         .min(-180, "La longitude doit être ≥ -180")
         .max(180, "La longitude doit être ≤ 180"),
 
+    address: z.string().optional(),
+    note: z.string().max(500, "La note ne peut pas dépasser 500 caractères").optional(),
+});
+
+// Schéma pour la mise à jour (user_id requis, autres champs optionnels)
+export const updateParkingSchema = z.object({
+    user_id: z
+        .number({
+            invalid_type_error: "Le user_id doit être un nombre",
+        })
+        .int("Le user_id doit être un entier")
+        .positive("Le user_id doit être positif"),
     address: z.string().optional(),
     note: z.string().max(500, "La note ne peut pas dépasser 500 caractères").optional(),
 });

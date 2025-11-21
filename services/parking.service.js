@@ -2,10 +2,9 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function createParking(userId, { latitude, longitude, address, note }) {
+export async function createParking({ user_id, latitude, longitude, address, note }) {
     return prisma.parking.create({
-        data: { user_id: userId, latitude, longitude, address, note },
-        include: { user: { select: { id: true, email: true } } },
+        data: { user_id, latitude, longitude, address, note },
     });
 }
 
@@ -14,7 +13,6 @@ export async function getLatestParking(userId) {
     return prisma.parking.findFirst({
         where: { user_id: userId },
         orderBy: { created_at: 'desc' },
-        include: { user: { select: { id: true, email: true } } },
     });
 }
 

@@ -9,8 +9,8 @@ deleteParking as deleteParkingService,
 
 export async function create(req, res) {
     try {
-        const { latitude, longitude, address, note } = req.body;
-        const parking = await createParking(req.user.id, { latitude, longitude, address, note });
+        const { user_id, latitude, longitude, address, note } = req.body;
+        const parking = await createParking({ user_id, latitude, longitude, address, note });
         return res.status(201).json({ message: 'Position enregistrée avec succès', parking });
     } catch (error) {
         console.error("Erreur lors de l'enregistrement:", error);
@@ -20,11 +20,18 @@ export async function create(req, res) {
 
 export async function current(req, res) {
     try {
-        const parking = await getLatestParking(req.user.id);
+        const user_id = parseInt(req.query.user_id, 10);
+        if (!user_id) {
+            return res.status(400).json({
+                error: 'Paramètre manquant',
+                message: "Le paramètre user_id est requis dans la query string",
+            });
+        }
+        const parking = await getLatestParking(user_id);
         if (!parking) {
             return res.status(404).json({
                 error: 'Aucune position trouvée',
-                message: "Vous n'avez pas encore enregistré de position",
+                message: "Aucune position enregistrée pour cet utilisateur",
             });
         }
         return res.json({ parking });
@@ -36,9 +43,16 @@ export async function current(req, res) {
 
 export async function history(req, res) {
     try {
-    const limit = parseInt(req.query.limit ?? '50', 10);
+        const user_id = parseInt(req.query.user_id, 10);
+        if (!user_id) {
+            return res.status(400).json({
+                error: 'Paramètre manquant',
+                message: "Le paramètre user_id est requis dans la query string",
+            });
+        }
+        const limit = parseInt(req.query.limit ?? '50', 10);
         const offset = parseInt(req.query.offset ?? '0', 10);
-        const { parkings, total } = await getParkingHistory(req.user.id, limit, offset);
+        const { parkings, total } = await getParkingHistory(user_id, limit, offset);
 
         return res.json({
             parkings,
@@ -58,19 +72,24 @@ export async function history(req, res) {
 export async function update(req, res) {
     try {
         const id = parseInt(req.params.id, 10);
-        const { address, note } = req.body;
+        const { user_id, address, note } = req.body;
 
+        if (!user_id) {
+            return res.status(400).json({
+                error: 'Paramètre manquant',
+                message: "Le paramètre user_id est requis dans le body",
+            });
+        }
 
         const data = {};
         if (address !== undefined) data.address = address;
         if (note !== undefined) data.note = note;
 
-
-        const updated = await updateParkingService(req.user.id, id, data);
-            if (!updated) {
-                return res.status(404).json({
+        const updated = await updateParkingService(user_id, id, data);
+        if (!updated) {
+            return res.status(404).json({
                 error: 'Position introuvable',
-                message: "Cette position n'existe pas ou ne vous appartient pas",
+                message: "Cette position n'existe pas ou n'appartient pas à cet utilisateur",
             });
         }
 
@@ -84,12 +103,20 @@ export async function update(req, res) {
 export async function destroy(req, res) {
     try {
         const id = parseInt(req.params.id, 10);
+        const user_id = parseInt(req.query.user_id, 10);
 
-        const deleted = await deleteParkingService(req.user.id, id);
+        if (!user_id) {
+            return res.status(400).json({
+                error: 'Paramètre manquant',
+                message: "Le paramètre user_id est requis dans la query string",
+            });
+        }
+
+        const deleted = await deleteParkingService(user_id, id);
         if (!deleted) {
             return res.status(404).json({
             error: 'Position introuvable',
-            message: "Cette position n'existe pas ou ne vous appartient pas",
+            message: "Cette position n'existe pas ou n'appartient pas à cet utilisateur",
         });
         }
         return res.json({ message: 'Position supprimée avec succès' });

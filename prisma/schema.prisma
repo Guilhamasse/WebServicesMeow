@@ -8,39 +8,31 @@ datasource db {
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
-  email      String    @unique
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
   password   String
-  role       String    @default("user") // Rôle de l'utilisateur: "user" ou "admin"
-  created_at DateTime  @default(now())
-  parkings   Parking[]
-  apiKeys    ApiKey[]
+  role       String   @default("user") // Rôle de l'utilisateur: "user" ou "admin"
+  created_at DateTime @default(now())
 }
 
 model Parking {
   id         Int      @id @default(autoincrement())
-  user_id    Int
+  user_id    Int // ID utilisateur envoyé par le client (pas de relation avec User)
   latitude   Float
   longitude  Float
   address    String?
   note       String?
   created_at DateTime @default(now())
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
   @@index([user_id])
 }
 
 model ApiKey {
-  id          Int      @id @default(autoincrement())
-  user_id     Int
-  key_hash    String?   @unique // Hash de la clé API (unique car chaque hash correspond à une seule clé)
-  key_prefix  String?   // Préfixe pour identification (ex: tk_live_)
-  name        String?
+  id           Int       @id @default(autoincrement())
+  key_hash     String?   @unique // Hash de la clé API (unique car chaque hash correspond à une seule clé)
+  key_prefix   String? // Préfixe pour identification (ex: tk_live_)
+  name         String?
   last_used_at DateTime?
-  created_at  DateTime @default(now())
-  expires_at  DateTime?
-  is_active   Boolean  @default(true)
-  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@index([user_id])
+  created_at   DateTime  @default(now())
+  expires_at   DateTime?
+  is_active    Boolean   @default(true)
 }

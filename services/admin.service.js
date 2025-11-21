@@ -28,7 +28,6 @@ export class AdminService {
 
             const apiKeyRecord = await tx.apiKey.create({
                 data: {
-                    user_id: user.id,
                     key_hash: keyHash,
                     key_prefix: keyPrefix,
                     name: name || `Clé pour ${email}`,
@@ -56,20 +55,22 @@ export class AdminService {
                 email: true,
                 role: true,
                 created_at: true,
-                apiKeys: {
-                    select: {
-                        id: true,
-                        key_hash: true,
-                        key_prefix: true,
-                        name: true,
-                        is_active: true,
-                        created_at: true,
-                        last_used_at: true,
-                        expires_at: true
-                    },
-                    orderBy: { created_at: 'desc' }
-                },
-                _count: { select: { parkings: true, apiKeys: true } }
+                _count: { select: { parkings: true } }
+            },
+            orderBy: { created_at: 'desc' }
+        });
+
+        // Récupérer toutes les clés API (plus de relation avec user)
+        const allApiKeys = await prisma.apiKey.findMany({
+            select: {
+                id: true,
+                key_hash: true,
+                key_prefix: true,
+                name: true,
+                is_active: true,
+                created_at: true,
+                last_used_at: true,
+                expires_at: true
             },
             orderBy: { created_at: 'desc' }
         });
@@ -79,9 +80,9 @@ export class AdminService {
             email: user.email,
             role: user.role,
             created_at: user.created_at,
-            apiKeysCount: user._count.apiKeys,
             parkingsCount: user._count.parkings,
-            apiKeys: user.apiKeys.map(k => ({
+            apiKeysCount: allApiKeys.length,
+            apiKeys: allApiKeys.map(k => ({
                 id: k.id,
                 name: k.name,
                 is_active: k.is_active,
@@ -94,11 +95,7 @@ export class AdminService {
     }
 
     static async createApiKeyForUser(userId, name, expires_in_days) {
-        const user = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
-        if (!user) {
-            throw { status: 404, message: 'Utilisateur introuvable' };
-        }
-
+        // Note: userId n'est plus utilisé mais conservé pour compatibilité avec l'API admin
         const apiKey = generateApiKey();
         const keyHash = hashApiKey(apiKey);
         const keyPrefix = extractPrefix(apiKey);
@@ -111,7 +108,6 @@ export class AdminService {
 
         const apiKeyRecord = await prisma.apiKey.create({
             data: {
-                user_id: parseInt(userId),
                 key_hash: keyHash,
                 key_prefix: keyPrefix,
                 name: name || `Clé API - ${new Date().toLocaleDateString()}`,

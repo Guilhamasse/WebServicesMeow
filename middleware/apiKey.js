@@ -24,15 +24,7 @@ export const verifyApiKey = async (req, res, next) => {
 
         // Rechercher la clé API dans la base de données par hash
         const keyRecord = await prisma.apiKey.findFirst({
-            where: { key_hash: apiKeyHash },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        email: true
-                    }
-                }
-            }
+            where: { key_hash: apiKeyHash }
         });
 
         // Vérifier si la clé existe
@@ -65,9 +57,8 @@ export const verifyApiKey = async (req, res, next) => {
             data: { last_used_at: new Date() }
         });
 
-        // Attacher les informations de la clé API et de l'utilisateur à la requête
+        // Attacher les informations de la clé API à la requête
         req.apiKey = keyRecord;
-        req.user = keyRecord.user;
         
         next();
     } catch (error) {
@@ -80,15 +71,15 @@ export const verifyApiKey = async (req, res, next) => {
 };
 
 /**
- * Middleware optionnel pour vérifier que la clé API appartient à un utilisateur spécifique
+ * Middleware optionnel pour vérifier que la clé API est valide
  */
 export const verifyApiKeyOwner = async (req, res, next) => {
-    if (req.apiKey && req.user) {
+    if (req.apiKey) {
         next();
     } else {
         res.status(401).json({
-            error: 'Authentification requise',
-            message: 'Vous devez être authentifié pour accéder à cette ressource'
+            error: 'Clé API requise',
+            message: 'Vous devez fournir une clé API valide pour accéder à cette ressource'
         });
     }
 };
