@@ -41,12 +41,6 @@ export const loginSchema = z.object({
 /* -------------------------------------------------------------------------- */
 
 export const parkingSchema = z.object({
-    user_id: z
-        .number({
-            invalid_type_error: "Le user_id doit être un nombre",
-        })
-        .int("Le user_id doit être un entier")
-        .positive("Le user_id doit être positif"),
     latitude: z
         .number({
             invalid_type_error: "La latitude doit être un nombre",

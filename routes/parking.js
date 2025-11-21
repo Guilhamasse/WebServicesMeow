@@ -6,6 +6,7 @@ import {
 create,
 current,
 history,
+getOne,
 update,
 destroy,
 } from '../controllers/parking.controller.js';
@@ -13,27 +14,36 @@ destroy,
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// POST /api/v1/parking - Enregistrer une nouvelle position de parking
-router.post('/', verifyApiKey, validateWithSchema(parkingSchema), create);
+// POST /api/v1/parking/:user_id - Enregistrer une nouvelle position de parking
+router.post('/:user_id', verifyApiKey, validateWithSchema(parkingSchema), create);
 
-// GET /api/v1/parking/current?user_id=1 - Récupérer la dernière position enregistrée
-router.get('/current', verifyApiKey, current);
+// GET /api/v1/parking/:user_id/current - Récupérer la dernière position enregistrée
+router.get('/:user_id/current', verifyApiKey, current);
 
-// GET /api/v1/parking/history?user_id=1 - Récupérer l'historique des positions
-router.get('/history', verifyApiKey, history);
+// GET /api/v1/parking/:user_id/history - Récupérer l'historique des positions
+router.get('/:user_id/history', verifyApiKey, history);
+
+// GET /api/v1/parking/:user_id/:id - Obtenir un parking spécifique
+router.get('/:user_id/:id', verifyApiKey, getOne);
 
 // PATCH /api/v1/parking/:user_id/:id - Mettre à jour une position de parking
 router.patch('/:user_id/:id', verifyApiKey, validateWithSchema(updateParkingSchema), update);
 
 /**
  * @swagger
- * /api/v1/parking/{id}/start-timer:
+ * /api/v1/parking/{user_id}/{id}/start-timer:
  *   post:
  *     summary: Démarrer un chronomètre pour une position de stationnement
  *     tags: [Parking]
  *     security:
  *       - ApiKeyAuth: []
  *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de l'utilisateur
  *       - in: path
  *         name: id
  *         required: true
@@ -104,17 +114,10 @@ router.patch('/:user_id/:id', verifyApiKey, validateWithSchema(updateParkingSche
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/:id/start-timer', verifyApiKey, async (req, res) => {
+router.post('/:user_id/:id/start-timer', verifyApiKey, async (req, res) => {
     try {
-        const { id } = req.params;
-        const { user_id, duration = 10 } = req.body;
-
-        if (!user_id) {
-            return res.status(400).json({
-                error: 'Paramètre manquant',
-                message: 'Le paramètre user_id est requis dans le body'
-            });
-        }
+        const { user_id, id } = req.params;
+        const { duration = 10 } = req.body;
 
         // Vérifier que le parking appartient à l'utilisateur
         const parking = await prisma.parking.findFirst({

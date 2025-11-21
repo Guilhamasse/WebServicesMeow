@@ -3,13 +3,15 @@ import {
 createParking,
 getLatestParking,
 getParkingHistory,
+findOwnedParking,
 updateParking as updateParkingService,
 deleteParking as deleteParkingService,
 } from '../services/parking.service.js';
 
 export async function create(req, res) {
     try {
-        const { user_id, latitude, longitude, address, note } = req.body;
+        const user_id = parseInt(req.params.user_id, 10);
+        const { latitude, longitude, address, note } = req.body;
         const parking = await createParking({ user_id, latitude, longitude, address, note });
         return res.status(201).json({ message: 'Position enregistrée avec succès', parking });
     } catch (error) {
@@ -20,13 +22,7 @@ export async function create(req, res) {
 
 export async function current(req, res) {
     try {
-        const user_id = parseInt(req.query.user_id, 10);
-        if (!user_id) {
-            return res.status(400).json({
-                error: 'Paramètre manquant',
-                message: "Le paramètre user_id est requis dans la query string",
-            });
-        }
+        const user_id = parseInt(req.params.user_id, 10);
         const parking = await getLatestParking(user_id);
         if (!parking) {
             return res.status(404).json({
@@ -43,13 +39,7 @@ export async function current(req, res) {
 
 export async function history(req, res) {
     try {
-        const user_id = parseInt(req.query.user_id, 10);
-        if (!user_id) {
-            return res.status(400).json({
-                error: 'Paramètre manquant',
-                message: "Le paramètre user_id est requis dans la query string",
-            });
-        }
+        const user_id = parseInt(req.params.user_id, 10);
         const limit = parseInt(req.query.limit ?? '50', 10);
         const offset = parseInt(req.query.offset ?? '0', 10);
         const { parkings, total } = await getParkingHistory(user_id, limit, offset);
@@ -66,6 +56,25 @@ export async function history(req, res) {
     } catch (error) {
         console.error("Erreur lors de la récupération de l'historique:", error);
         return res.status(500).json({ error: 'Erreur serveur', message: "Impossible de récupérer l'historique" });
+    }
+}
+
+export async function getOne(req, res) {
+    try {
+        const user_id = parseInt(req.params.user_id, 10);
+        const id = parseInt(req.params.id, 10);
+        const parking = await findOwnedParking(user_id, id);
+        
+        if (!parking) {
+            return res.status(404).json({
+                error: 'Position introuvable',
+                message: "Cette position n'existe pas ou n'appartient pas à cet utilisateur",
+            });
+        }
+        return res.json({ parking });
+    } catch (error) {
+        console.error('Erreur lors de la récupération:', error);
+        return res.status(500).json({ error: 'Erreur serveur', message: "Impossible de récupérer la position" });
     }
 }
 
