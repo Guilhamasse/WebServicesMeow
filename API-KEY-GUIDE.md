@@ -37,66 +37,23 @@ const response = await fetch('http://localhost:3000/api/v1/parking/current', {
 
 ## Création et gestion des clés API
 
+Les clés API sont créées et gérées via les endpoints d'administration (`/admin/*`). Elles servent à authentifier l'accès à l'API.
+
 ### 1. Créer une clé API
 
-**Endpoint:** `POST /api/v1/api-keys`
+**Endpoint:** `POST /admin/users` (nécessite authentification admin)
 
-**Authentification:** JWT (via login/register)
+**Note:** Les clés API sont créées via l'interface admin et servent à authentifier l'accès à l'API.
 
-**Request:**
-```json
-{
-  "name": "Clé API mobile",
-  "expires_in_days": 365
-}
-```
+### 2. Lister les clés API
 
-**Response:**
-```json
-{
-  "message": "Clé API créée avec succès",
-  "apiKey": {
-    "id": 1,
-    "key": "tk_live_aBc123XyZ789...",
-    "name": "Clé API mobile",
-    "created_at": "2024-01-01T00:00:00.000Z",
-    "expires_at": "2025-01-01T00:00:00.000Z"
-  },
-  "warning": "⚠️ Conservez cette clé en sécurité - Cette clé ne sera affichée qu'une seule fois"
-}
-```
+**Endpoint:** `GET /admin/users` (nécessite authentification admin)
 
-### 2. Lister vos clés API
-
-**Endpoint:** `GET /api/v1/api-keys`
-
-**Authentification:** JWT
-
-**Response:**
-```json
-{
-  "apiKeys": [
-    {
-      "id": 1,
-      "key_prefix": "tk_live_***",
-      "name": "Clé API mobile",
-      "is_active": true,
-      "created_at": "2024-01-01T00:00:00.000Z",
-      "last_used_at": "2024-01-15T10:30:00.000Z",
-      "expires_at": "2025-01-01T00:00:00.000Z"
-    }
-  ],
-  "total": 1
-}
-```
-
-⚠️ Note : Les clés sont masquées dans la liste (seuls les premiers et derniers caractères sont affichés).
+Les clés API sont listées via l'interface admin.
 
 ### 3. Désactiver une clé API
 
-**Endpoint:** `DELETE /api/v1/api-keys/:id`
-
-**Authentification:** JWT
+**Endpoint:** `DELETE /admin/api-keys/:id` (nécessite authentification admin)
 
 **Response:**
 ```json
@@ -146,7 +103,7 @@ En cas d'échec, une erreur 401 ou 403 est renvoyée :
 const API_KEY = 'tk_live_mobile_key_123';
 
 // Utiliser dans l'app mobile
-async function saveParkingLocation(lat, lng) {
+async function saveParkingLocation(userId, lat, lng) {
   const response = await fetch('https://api.trackme.com/api/v1/parking', {
     method: 'POST',
     headers: {
@@ -154,6 +111,7 @@ async function saveParkingLocation(lat, lng) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
+      user_id: userId,  // ID utilisateur envoyé par le client
       latitude: lat,
       longitude: lng,
       note: 'Au travail'
@@ -168,9 +126,11 @@ async function saveParkingLocation(lat, lng) {
 
 ```bash
 # Une application externe utilise votre API
-curl -X GET "https://api.trackme.com/api/v1/parking/history?limit=10" \
+curl -X GET "https://api.trackme.com/api/v1/parking/history?user_id=1&limit=10" \
   -H "X-API-Key: tk_live_integration_xyz"
 ```
+
+**Important:** Le paramètre `user_id` est requis dans la query string pour identifier l'utilisateur.
 
 ### 3. Rotation des clés
 
@@ -222,11 +182,13 @@ await deleteApiKey(oldKeyId);
 
 ## Workflow complet
 
-1. **S'inscrire ou se connecter** via `/auth/register` ou `/auth/login`
-2. **Générer une clé API** via `/api-keys` avec le token JWT
-3. **Copier la clé** immédiatement - elle ne sera affichée qu'une seule fois
-4. **Utiliser la clé** dans toutes les requêtes vers les endpoints parking
-5. **Gérer les clés** via les endpoints `/api-keys` (seul le préfixe sera visible)
+1. **Obtenir une clé API** via l'interface admin (`/admin/users`)
+2. **Copier la clé** immédiatement - elle ne sera affichée qu'une seule fois
+3. **Utiliser la clé** dans toutes les requêtes vers les endpoints parking avec le header `X-API-Key`
+4. **Envoyer le `user_id`** dans chaque requête (body pour POST/PATCH, query pour GET/DELETE)
+5. **Gérer les clés** via les endpoints admin (seul le préfixe sera visible dans les listes)
+
+**Note:** Les clés API servent à authentifier l'accès à l'API. Le `user_id` est un paramètre métier envoyé par le client pour identifier l'utilisateur final.
 
 ## Dépannage
 

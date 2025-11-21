@@ -22,8 +22,8 @@ router.get('/current', verifyApiKey, current);
 // GET /api/v1/parking/history?user_id=1 - Récupérer l'historique des positions
 router.get('/history', verifyApiKey, history);
 
-// PATCH /api/v1/parking/:id - Mettre à jour une position de parking
-router.patch('/:id', verifyApiKey, validateWithSchema(updateParkingSchema), update);
+// PATCH /api/v1/parking/:user_id/:id - Mettre à jour une position de parking
+router.patch('/:user_id/:id', verifyApiKey, validateWithSchema(updateParkingSchema), update);
 
 /**
  * @swagger
@@ -164,8 +164,8 @@ router.post('/:id/start-timer', verifyApiKey, async (req, res) => {
     }
 });
 
-// DELETE /api/v1/parking/:id?user_id=1 - Supprimer une position de parking
-router.delete('/:id', verifyApiKey, destroy);
+// DELETE /api/v1/parking/:user_id/:id - Supprimer une position de parking
+router.delete('/:user_id/:id', verifyApiKey, destroy);
 
 
 export default router;

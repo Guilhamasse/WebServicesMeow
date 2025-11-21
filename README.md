@@ -80,10 +80,13 @@ curl -X POST http://localhost:3000/api/v1/parking \
   -H "X-API-Key: tk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
+    "user_id": 1,
     "latitude": 48.8566,
     "longitude": 2.3522
   }'
 ```
+
+**Important:** Le client doit envoyer le `user_id` dans chaque requête. Ce n'est pas lié à l'authentification, c'est un paramètre métier pour identifier l'utilisateur final.
 
 C'est tout ! 🎉
 
@@ -179,18 +182,21 @@ Sauvegarder une nouvelle position GPS
 
 **Headers:**
 ```
-Authorization: Bearer <token>
+X-API-Key: <votre-clé-api>
 ```
 
 **Body:**
 ```json
 {
+  "user_id": 1,
   "latitude": 48.8566,
   "longitude": 2.3522,
   "address": "Rue de Rivoli, 75001 Paris",
   "note": "Parking souterrain niveau -2"
 }
 ```
+
+**Note:** Le `user_id` est un identifiant métier envoyé par le client pour identifier l'utilisateur final.
 
 **Response (201):**
 ```json
@@ -208,13 +214,16 @@ Authorization: Bearer <token>
 }
 ```
 
-#### GET `/parking/current`
+#### GET `/parking/current?user_id=1`
 Obtenir la dernière position enregistrée
 
 **Headers:**
 ```
-Authorization: Bearer <token>
+X-API-Key: <votre-clé-api>
 ```
+
+**Query params:**
+- `user_id` (requis) - ID de l'utilisateur
 
 **Response (200):**
 ```json
@@ -231,15 +240,16 @@ Authorization: Bearer <token>
 }
 ```
 
-#### GET `/parking/history`
+#### GET `/parking/history?user_id=1`
 Récupérer l'historique complet des positions
 
 **Headers:**
 ```
-Authorization: Bearer <token>
+X-API-Key: <votre-clé-api>
 ```
 
 **Query params:**
+- `user_id` (requis) - ID de l'utilisateur
 - `limit` (optionnel, défaut: 50) - Nombre de résultats
 - `offset` (optionnel, défaut: 0) - Pagination
 
@@ -265,13 +275,17 @@ Authorization: Bearer <token>
 }
 ```
 
-#### DELETE `/parking/:id`
+#### DELETE `/parking/:user_id/:id`
 Supprimer une position spécifique
 
 **Headers:**
 ```
-Authorization: Bearer <token>
+X-API-Key: <votre-clé-api>
 ```
+
+**Path params:**
+- `user_id` (requis) - ID de l'utilisateur
+- `id` (requis) - ID de la position à supprimer
 
 **Response (200):**
 ```json
@@ -280,13 +294,17 @@ Authorization: Bearer <token>
 }
 ```
 
-#### PATCH `/parking/:id`
+#### PATCH `/parking/:user_id/:id`
 Modifier une position (adresse ou note uniquement)
 
 **Headers:**
 ```
-Authorization: Bearer <token>
+X-API-Key: <votre-clé-api>
 ```
+
+**Path params:**
+- `user_id` (requis) - ID de l'utilisateur
+- `id` (requis) - ID de la position à modifier
 
 **Body:**
 ```json
@@ -351,7 +369,7 @@ Authorization: Bearer <token>
 
 ### Table `Parking`
 - `id` (INT, PRIMARY KEY)
-- `user_id` (INT, FOREIGN KEY -> User.id)
+- `user_id` (INT) - ID utilisateur envoyé par le client
 - `latitude` (DOUBLE PRECISION)
 - `longitude` (DOUBLE PRECISION)
 - `address` (TEXT, nullable)
@@ -360,14 +378,15 @@ Authorization: Bearer <token>
 
 ### Table `ApiKey`
 - `id` (INT, PRIMARY KEY)
-- `user_id` (INT, FOREIGN KEY -> User.id)
-- `key_hash` (TEXT, nullable) - Hash SHA-256 de la clé API
+- `key_hash` (TEXT, nullable, UNIQUE) - Hash SHA-256 de la clé API
 - `key_prefix` (TEXT, nullable) - Préfixe de la clé (ex: tk_live_)
 - `name` (TEXT, nullable)
 - `last_used_at` (TIMESTAMP, nullable)
 - `created_at` (TIMESTAMP)
 - `expires_at` (TIMESTAMP, nullable)
 - `is_active` (BOOLEAN)
+
+**Note:** Les clés API sont indépendantes et servent à authentifier l'accès à l'API.
 
 ## 🧪 Test
 
@@ -394,8 +413,8 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 ```bash
 curl -X POST http://localhost:3000/api/v1/parking \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <votre-token>" \
-  -d '{"latitude":48.8566,"longitude":2.3522,"address":"Paris"}'
+  -H "X-API-Key: <votre-clé-api>" \
+  -d '{"user_id":1,"latitude":48.8566,"longitude":2.3522,"address":"Paris"}'
 ```
 
 ## 📦 Dépendances

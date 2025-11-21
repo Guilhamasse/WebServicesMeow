@@ -17,7 +17,7 @@ model User {
 
 model Parking {
   id         Int      @id @default(autoincrement())
-  user_id    Int // ID utilisateur envoyé par le client (pas de relation avec User)
+  user_id    Int // ID utilisateur envoyé par le client
   latitude   Float
   longitude  Float
   address    String?

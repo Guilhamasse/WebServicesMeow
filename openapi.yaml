@@ -205,6 +205,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ParkingRequest'
             example:
+              user_id: 1
               latitude: 48.8566
               longitude: 2.3522
               address: "Place de la Bastille, 75011 Paris"
@@ -244,10 +245,17 @@ paths:
   /api/v1/parking/current:
     get:
       summary: Récupérer la dernière position enregistrée
-      description: Retourne la position de parking la plus récente pour l'utilisateur authentifié
+      description: Retourne la position de parking la plus récente pour l'utilisateur spécifié
       tags: [Parking]
       security:
         - ApiKeyAuth: []
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: ID de l'utilisateur
       responses:
         '200':
           description: Dernière position récupérée avec succès
@@ -276,7 +284,7 @@ paths:
                     example: "Aucune position trouvée"
                   message:
                     type: string
-                    example: "Vous n'avez pas encore enregistré de position"
+                    example: "Aucune position enregistrée pour cet utilisateur"
         '500':
           description: Erreur serveur
           content:
@@ -287,11 +295,17 @@ paths:
   /api/v1/parking/history:
     get:
       summary: Récupérer l'historique des positions
-      description: Retourne l'historique paginé des positions de parking
+      description: Retourne l'historique paginé des positions de parking pour l'utilisateur spécifié
       tags: [Parking]
       security:
         - ApiKeyAuth: []
       parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: ID de l'utilisateur
         - in: query
           name: limit
           schema:
@@ -347,7 +361,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /api/v1/parking/{id}:
+  /api/v1/parking/{user_id}/{id}:
     patch:
       summary: Mettre à jour une position de parking
       description: Met à jour l'adresse ou la note d'une position existante
@@ -355,6 +369,12 @@ paths:
       security:
         - ApiKeyAuth: []
       parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: ID de l'utilisateur
         - in: path
           name: id
           required: true
@@ -401,7 +421,7 @@ paths:
                     example: "Position introuvable"
                   message:
                     type: string
-                    example: "Cette position n'existe pas ou ne vous appartient pas"
+                    example: "Cette position n'existe pas ou n'appartient pas à cet utilisateur"
         '500':
           description: Erreur serveur
           content:
@@ -416,6 +436,12 @@ paths:
       security:
         - ApiKeyAuth: []
       parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: ID de l'utilisateur
         - in: path
           name: id
           required: true
@@ -451,7 +477,7 @@ paths:
                     example: "Position introuvable"
                   message:
                     type: string
-                    example: "Cette position n'existe pas ou ne vous appartient pas"
+                    example: "Cette position n'existe pas ou n'appartient pas à cet utilisateur"
         '500':
           description: Erreur serveur
           content:
@@ -820,9 +846,6 @@ components:
         id:
           type: integer
           description: ID unique de la clé API
-        user_id:
-          type: integer
-          description: ID de l'utilisateur propriétaire
         key:
           type: string
           description: Clé API générée
@@ -888,8 +911,11 @@ components:
 
     ParkingRequest:
       type: object
-      required: [latitude, longitude]
+      required: [user_id, latitude, longitude]
       properties:
+        user_id:
+          type: integer
+          description: ID utilisateur envoyé par le client
         latitude:
           type: number
           format: float

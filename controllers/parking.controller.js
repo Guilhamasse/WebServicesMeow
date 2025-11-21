@@ -71,15 +71,9 @@ export async function history(req, res) {
 
 export async function update(req, res) {
     try {
+        const user_id = parseInt(req.params.user_id, 10);
         const id = parseInt(req.params.id, 10);
-        const { user_id, address, note } = req.body;
-
-        if (!user_id) {
-            return res.status(400).json({
-                error: 'Paramètre manquant',
-                message: "Le paramètre user_id est requis dans le body",
-            });
-        }
+        const { address, note } = req.body;
 
         const data = {};
         if (address !== undefined) data.address = address;
@@ -102,15 +96,8 @@ export async function update(req, res) {
 
 export async function destroy(req, res) {
     try {
+        const user_id = parseInt(req.params.user_id, 10);
         const id = parseInt(req.params.id, 10);
-        const user_id = parseInt(req.query.user_id, 10);
-
-        if (!user_id) {
-            return res.status(400).json({
-                error: 'Paramètre manquant',
-                message: "Le paramètre user_id est requis dans la query string",
-            });
-        }
 
         const deleted = await deleteParkingService(user_id, id);
         if (!deleted) {

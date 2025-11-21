@@ -125,6 +125,7 @@ POST /api/v1/parking
 X-API-Key: tk_live_...
 
 {
+  "user_id": 1,
   "latitude": 48.8566,
   "longitude": 2.3522,
   "address": "Rue de Rivoli, Paris",
@@ -132,35 +133,43 @@ X-API-Key: tk_live_...
 }
 ```
 
+**Note:** Le `user_id` est requis dans le body. C'est un identifiant métier envoyé par le client pour identifier l'utilisateur final.
+
 ### Récupérer la dernière position
 
 ```bash
-GET /api/v1/parking/current
+GET /api/v1/parking/current?user_id=1
 X-API-Key: tk_live_...
 ```
+
+**Note:** Le paramètre `user_id` est requis dans la query string.
 
 ### Historique des positions
 
 ```bash
-GET /api/v1/parking/history
+GET /api/v1/parking/history?user_id=1
 X-API-Key: tk_live_...
 
 # Avec pagination
-GET /api/v1/parking/history?limit=10&offset=0
+GET /api/v1/parking/history?user_id=1&limit=10&offset=0
 X-API-Key: tk_live_...
 ```
+
+**Note:** Le paramètre `user_id` est requis dans la query string.
 
 ### Supprimer une position
 
 ```bash
-DELETE /api/v1/parking/:id
+DELETE /api/v1/parking/:user_id/:id
 X-API-Key: tk_live_...
 ```
+
+**Note:** Les paramètres `user_id` et `id` sont requis dans l'URL.
 
 ### Modifier une position
 
 ```bash
-PATCH /api/v1/parking/:id
+PATCH /api/v1/parking/:user_id/:id
 X-API-Key: tk_live_...
 
 {
@@ -168,6 +177,8 @@ X-API-Key: tk_live_...
   "address": "Nouvelle adresse"
 }
 ```
+
+**Note:** Les paramètres `user_id` et `id` sont requis dans l'URL. Le body contient uniquement les champs à modifier (address et/ou note).
 
 ## Exemples complets
 
@@ -198,13 +209,14 @@ curl -X POST http://localhost:3000/api/v1/parking \
   -H "Content-Type: application/json" \
   -H "X-API-Key: tk_live_..." \
   -d '{
+    "user_id": 1,
     "latitude": 48.8566,
     "longitude": 2.3522,
     "address": "Paris"
   }'
 
 # Récupérer la dernière position
-curl -X GET http://localhost:3000/api/v1/parking/current \
+curl -X GET "http://localhost:3000/api/v1/parking/current?user_id=1" \
   -H "X-API-Key: tk_live_..."
 ```
 
@@ -226,6 +238,10 @@ Toutes les requêtes doivent inclure le header :
 X-API-Key: tk_live_aBc123XyZ789...
 ```
 
+**Important:** Vous devez également envoyer le `user_id` dans chaque requête :
+- Dans le **body** pour POST et PATCH
+- Dans la **query string** pour GET et DELETE
+
 ## Exemple
 
 Enregistrer une position :
@@ -234,9 +250,16 @@ curl -X POST https://api.trackme.com/api/v1/parking \
   -H "X-API-Key: tk_live_aBc123XyZ789..." \
   -H "Content-Type: application/json" \
   -d '{
+    "user_id": 1,
     "latitude": 48.8566,
     "longitude": 2.3522
   }'
+```
+
+Récupérer la dernière position :
+```bash
+curl -X GET "https://api.trackme.com/api/v1/parking/current?user_id=1" \
+  -H "X-API-Key: tk_live_aBc123XyZ789..."
 ```
 
 📖 Documentation complète : https://docs.trackme.com
@@ -250,6 +273,9 @@ curl -X POST https://api.trackme.com/api/v1/parking \
 ✅ **Traçabilité** - Vous voyez qui utilise quoi et quand  
 ✅ **Expiration** - Possibilité de définir des durées de validité  
 ✅ **Désactivation facile** - Couper l'accès en un clic  
+✅ **Flexible** - Gestion souple des clés API indépendantes
+
+**Note importante:** Les clés API servent à authentifier l'accès à l'API. Le `user_id` est un paramètre métier envoyé par le client dans chaque requête pour identifier l'utilisateur final.  
 
 ## Sécurité des endpoints admin
 
