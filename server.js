@@ -10,7 +10,6 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { specs } from './swagger.config.js';
 import parkingRoutes from './routes/parking.js';
-import router from './routes/router.js'; // ✅ Routeur centralisé
 import { setupWebSocket } from './websocket/websocket.js';
 
 const app = express();
