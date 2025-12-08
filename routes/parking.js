@@ -17,17 +17,12 @@ const router = express.Router();
 // POST /api/v1/parking/:user_id - Enregistrer une nouvelle position de parking
 router.post('/:user_id', verifyApiKey, validateWithSchema(parkingSchema), create);
 
+// ⚠️ IMPORTANT : Routes spécifiques AVANT les routes génériques
 // GET /api/v1/parking/:user_id/current - Récupérer la dernière position enregistrée
 router.get('/:user_id/current', verifyApiKey, current);
 
 // GET /api/v1/parking/:user_id/history - Récupérer l'historique des positions
 router.get('/:user_id/history', verifyApiKey, history);
-
-// GET /api/v1/parking/:user_id/:id - Obtenir un parking spécifique
-router.get('/:user_id/:id', verifyApiKey, getOne);
-
-// PATCH /api/v1/parking/:user_id/:id - Mettre à jour une position de parking
-router.patch('/:user_id/:id', verifyApiKey, validateWithSchema(updateParkingSchema), update);
 
 /**
  * @swagger
@@ -166,6 +161,13 @@ router.post('/:user_id/:id/start-timer', verifyApiKey, async (req, res) => {
         });
     }
 });
+
+// Routes génériques avec paramètres (APRÈS toutes les routes spécifiques)
+// GET /api/v1/parking/:user_id/:id - Obtenir un parking spécifique
+router.get('/:user_id/:id', verifyApiKey, getOne);
+
+// PATCH /api/v1/parking/:user_id/:id - Mettre à jour une position de parking
+router.patch('/:user_id/:id', verifyApiKey, validateWithSchema(updateParkingSchema), update);
 
 // DELETE /api/v1/parking/:user_id/:id - Supprimer une position de parking
 router.delete('/:user_id/:id', verifyApiKey, destroy);
