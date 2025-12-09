@@ -8,7 +8,7 @@ info:
     email: contact@webservicesmeow.com
 
 servers:
-  - url: http://localhost:3000
+  - url: https://trackme-a7qj.onrender.com/
     description: Serveur de développement
 
 tags:

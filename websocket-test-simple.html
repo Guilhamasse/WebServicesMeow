@@ -136,6 +136,8 @@
         <!-- Section de test du chronomètre -->
         <div class="section">
             <h3>⏱️ Test Chronomètre</h3>
+            <button onclick="createParking()" style="background-color: #28a745;">🏗️ Créer un nouveau parking</button>
+            <br><br>
             <input type="number" id="parkingId" placeholder="ID du parking" value="1">
             <input type="number" id="duration" placeholder="Durée (secondes)" value="10">
             <button id="startTimerBtn" onclick="startTimer()" disabled>Démarrer le chronomètre</button>
@@ -332,6 +334,44 @@
                 log('🔌 Déconnexion manuelle', 'info');
                 clearInterval(timerInterval);
                 updateConnectionStatus(false);
+            }
+        }
+
+        // Fonction pour créer un parking via API REST
+        async function createParking() {
+            const apiKey = 'tk_live_0viSmhto8/LkZ922CLes/ZRjJu5wb4SZ0jEUww2nSkc='; // Clé API générée
+            
+            log('🏗️ Création d\'un parking...', 'info');
+            
+            try {
+                const response = await fetch('/api/v1/parking', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        user_id: 1,
+                        latitude: 48.8566 + Math.random() * 0.01,
+                        longitude: 2.3522 + Math.random() * 0.01,
+                        address: 'Parking de test ' + new Date().toLocaleTimeString(),
+                        note: 'Parking créé via interface de test'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Parking créé: ID ' + data.parking.id, 'success');
+                    document.getElementById('parkingId').value = data.parking.id;
+                    return data.parking.id;
+                } else {
+                    log('❌ Erreur création parking: ' + JSON.stringify(data), 'error');
+                    return null;
+                }
+            } catch (error) {
+                log('❌ Erreur création parking: ' + error.message, 'error');
+                return null;
             }
         }
 
